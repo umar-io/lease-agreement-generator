@@ -6,21 +6,27 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Define the Noto Sans stack */
+  --font-sans: var(--font-noto-jp), "Noto Sans", sans-serif;
+  --font-display: var(--font-noto-jp), sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: #135bec;
+  --color-background-light: #f6f6f8;
+  --color-background-dark: #101622;
+  
+  --shadow-soft: 0 2px 15px rgba(0, 0, 0, 0.05);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  /* Noto Sans JP looks best with slightly more letter spacing */
+  letter-spacing: -0.01em; 
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Make inputs feel less like defaults */
+input, select, textarea {
+  @apply focus:ring-4 focus:ring-primary/10 transition-all duration-200 outline-none border-slate-200;
 }
