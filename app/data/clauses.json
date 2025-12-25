@@ -1,0 +1,17 @@
+[
+  {
+    "id": "intro",
+    "title": "Parties and Property",
+    "content": "This Lease Agreement is entered into on {{date}} between the Landlord and the Tenant, {{tenant_name}}, for the property located at {{address}}."
+  },
+  {
+    "id": "rent",
+    "title": "Monthly Rent",
+    "content": "The Tenant agrees to pay a monthly rent of {{rent_amount}}, payable on the first of every month."
+  },
+  {
+    "id": "security_deposit",
+    "title": "Security Deposit",
+    "content": "A security deposit of {{deposit_amount}} shall be held by the Landlord. (Note: Under legal guidelines, this should not exceed two months' rent)."
+  }
+]
