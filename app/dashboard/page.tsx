@@ -47,7 +47,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return redirect("/login");
+  if (!user) return redirect("/auth/login");
 
   // Fetch the profile created by the SQL Trigger
   const profile = await prisma.profile.findUnique({
