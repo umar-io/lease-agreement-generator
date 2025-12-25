@@ -2,11 +2,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff , Quote } from "lucide-react";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  
 
   return (
     <div className="font-display bg-background-light dark:bg-background-dark text-[#111318] dark:text-white antialiased">
@@ -185,7 +187,7 @@ export default function RegisterPage() {
             <p className="mt-10 text-center text-sm text-[#616f89] dark:text-gray-400">
               Already have an account?{" "}
               <Link
-                href="/login"
+                href="/authlogin"
                 className="font-semibold text-primary hover:underline"
               >
                 Log in
@@ -202,10 +204,10 @@ export default function RegisterPage() {
             fill
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
           <div className="absolute bottom-0 p-20 text-white">
             <span className="material-symbols-outlined text-4xl text-primary mb-4">
-              format_quote
+             <Quote />
             </span>
             <p className="text-2xl font-medium leading-relaxed max-w-lg italic">
               "This lease generator has completely transformed how we manage our

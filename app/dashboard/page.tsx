@@ -1,6 +1,8 @@
-"use client";
+// "use client";
 import React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
 import {
   PlusCircle,
   FolderArchive,
@@ -8,6 +10,9 @@ import {
   GavelIcon,
   HelpCircle,
 } from "lucide-react";
+
+import { createClient } from "../utils/supabase/server";
+import { prisma } from "../lib/prisma"; // Your Prisma 7 client with Driver Adapter
 
 const RECENT_AGREEMENTS = [
   {
@@ -36,16 +41,29 @@ const RECENT_AGREEMENTS = [
   },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return redirect("/login");
+
+  // Fetch the profile created by the SQL Trigger
+  const profile = await prisma.profile.findUnique({
+    where: { id: user.id },
+    include: { leases: true }, // Bring in their leases too!
+  });
+
   return (
-    <div className="layout-content-container flex flex-col max-w-[960px] flex-1 mx-auto">
+    <div className="layout-content-container flex flex-col max-w-240 flex-1 mx-auto">
       {/* Hero Section */}
       <section className="flex flex-col gap-6 px-4 py-10 md:flex-row items-center">
         <div className="w-full aspect-video bg-cover rounded-xl shadow-sm md:w-1/2 bg-[url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1000')]" />
         <div className="flex flex-col gap-6 md:w-1/2 md:justify-center">
           <div>
             <h1 className="text-[#111318] dark:text-white text-4xl font-black tracking-tight md:text-5xl">
-              Welcome back, Alex
+              Welcome back, {profile?.fullName || 'User'}
             </h1>
             <p className="text-[#616f89] dark:text-gray-400 text-base mt-2">
               Ready to create a new agreement? Draft legally binding leases in

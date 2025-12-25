@@ -1,28 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fdfdfe; /* Slightly warmer white for a "paper" feel */
+  --foreground: #0f172a; /* Slate 900 */
 }
 
 @theme inline {
-  /* Define the Noto Sans stack */
-  --font-sans: var(--font-noto-jp), "Noto Sans", sans-serif;
-  --font-display: var(--font-noto-jp), sans-serif;
+  /* The "Human" Font Choice */
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui;
+  --font-display: var(--font-jakarta), "Inter", sans-serif;
 
+  /* Custom Colors */
   --color-primary: #135bec;
-  --color-background-light: #f6f6f8;
-  --color-background-dark: #101622;
+  --color-primary-hover: #0f4bc0;
+  --color-background-light: #f8fafc; /* Slate 50 */
+  --color-background-dark: #020617;  /* Slate 950 */
+  --color-card-dark: #0f172a;       /* Slate 900 */
   
-  --shadow-soft: 0 2px 15px rgba(0, 0, 0, 0.05);
+  /* Adding a "Human" Shadow */
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.04);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #020617;
+    --foreground: #f1f5f9;
+  }
+}
+
+/* Global Styles */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-  /* Noto Sans JP looks best with slightly more letter spacing */
-  letter-spacing: -0.01em; 
+  font-feature-settings: "cv11", "ss01"; /* Modern font features for legibility */
   -webkit-font-smoothing: antialiased;
 }
 

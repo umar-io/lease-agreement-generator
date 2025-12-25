@@ -33,7 +33,7 @@ export default function Navbar() {
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Don't show navbar on the Landing Page
-  if (pathname === "/") return null;
+  if (pathname === "/" || pathname === "/auth/register" || pathname === "/auth/login") return null;
 
   // Handle outside click for profile dropdown
   useEffect(() => {
@@ -130,7 +130,7 @@ export default function Navbar() {
                     Sign Out
                   </button>
 
-                  <div className="mx-2 mt-2 p-3 bg-gradient-to-br from-primary to-blue-700 rounded-xl text-white">
+                  <div className="mx-2 mt-2 p-3 bg-linear-to-br from-primary to-blue-700 rounded-xl text-white">
                     <p className="text-[10px] font-black flex items-center gap-1.5 uppercase tracking-wider">
                       <Sparkles size={12} /> Membership
                     </p>
