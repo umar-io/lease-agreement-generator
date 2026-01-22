@@ -10,3 +10,6 @@ export function Icon({ name, className }: IconProps) {
     </svg>
   );
 }
+
+
+export default Icon;
