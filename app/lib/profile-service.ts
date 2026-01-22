@@ -1,5 +1,5 @@
 // app/lib/profile-service.ts
-import { db } from "./db";
+import { db } from "@/app/lib/db";
 import { profiles } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/app/utils/supabase/server";

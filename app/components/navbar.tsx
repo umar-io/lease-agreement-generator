@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icon } from "./icon";
+import { Icon } from "@/app/components/icon";
 import { useAuth } from "@/app/hooks/auth-context";
 
 const NAV_ITEMS = [
@@ -67,7 +67,7 @@ function NavbarContent() {
                 <Icon name="plus-circle" className="w-5 h-5" />
               </div>
               <span className="font-black text-xl tracking-tighter dark:text-white uppercase">
-                LeaseGen
+                Leezign
               </span>
             </Link>
 

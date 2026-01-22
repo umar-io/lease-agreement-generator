@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon } from "@/app/components/icon";
-import { createClient } from "../utils/supabase/server";
+import { createClient } from "@/app/utils/supabase/server";
 import { fetchOrCreateUserProfile, createFallbackProfile } from "../lib/profile-service";
 
 export default async function DashboardPage() {

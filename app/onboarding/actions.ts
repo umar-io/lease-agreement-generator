@@ -1,7 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
-import { createClient } from "../utils/supabase/server";
-import { fetchOrCreateUserProfile, updateUserProfile } from "../lib/profile-service";
+import { createClient } from "@/app/utils/supabase/server";
+import { fetchOrCreateUserProfile, updateUserProfile } from "@/app/lib/profile-service";
 
 export async function saveOnboarding(formData: FormData) {
   const supabase = await createClient();
