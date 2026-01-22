@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { login } from "../action";
 import { useActionState } from "react";
-import { Logo } from "@/app/components/logo";
-import { Icon } from "@/app/components/icon";
+import { Logo } from "@/app/_components/logo";
+import Icon  from "@/app/_components/icon";
 import Link from "next/link";
 
 export default function LoginPage() {

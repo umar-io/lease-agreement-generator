@@ -1,6 +1,6 @@
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
-import Navbar from './components/navbar'
+import Navbar from './_components/navbar'
 import { AuthProvider } from './hooks/auth-context';
 import fs from "fs";
 import path from "path";

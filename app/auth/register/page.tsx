@@ -4,8 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { signup } from "../action";
 import { useActionState } from "react";
-import { Logo } from "@/app/components/logo";
-import { Icon } from "@/app/components/icon";
+import { Logo } from "@/app/_components/logo";
+import Icon  from "@/app/_components/icon";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);

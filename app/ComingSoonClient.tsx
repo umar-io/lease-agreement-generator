@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Icon } from "./components/icon";
+import { Icon } from "./_components/icon";
 
 
 function Feature({

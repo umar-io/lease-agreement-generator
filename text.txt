@@ -1,4 +1,0 @@
-DATABASE_URL=postgresql://postgres.yjsmugjzolprxtfrtgyc:Password123@18.198.30.239:6543/postgres?pgbouncer=true&sslmode=require
-DIRECT_URL=postgresql://postgres.yjsmugjzolprxtfrtgyc:Password123@18.198.30.239:5432/postgres?sslmode=require
-NEXT_PUBLIC_SUPABASE_URL=https://yjsmugjzolprxtfrtgyc.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlqc211Z2p6b2xwcnh0ZnJ0Z3ljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY2MjQ0NTUsImV4cCI6MjA4MjIwMDQ1NX0.2cVUfqrsAdFLXy6siyNLdDEGRaRynN3e4LDogtPUcLs

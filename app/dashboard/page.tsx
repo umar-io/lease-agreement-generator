@@ -1,7 +1,7 @@
 // app/dashboard/page.tsx
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Icon } from "@/app/components/icon";
+import  Icon  from "@/app/_components/icon";
 import { createClient } from "@/app/utils/supabase/server";
 import { fetchOrCreateUserProfile, createFallbackProfile } from "../lib/profile-service";
 
