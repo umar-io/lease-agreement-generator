@@ -41,3 +41,9 @@ body {
 input, select, textarea {
   @apply focus:ring-4 focus:ring-primary/10 transition-all duration-200 outline-none border-slate-200;
 }
+
+
+svg {
+  stroke: currentColor;
+  fill: none;
+}

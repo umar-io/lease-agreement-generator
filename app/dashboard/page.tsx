@@ -1,18 +1,12 @@
-// "use client";
 import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
-import {
-  PlusCircle,
-  FolderArchive,
-  Users,
-  GavelIcon,
-  HelpCircle,
-} from "lucide-react";
+import { Icon } from "@/app/components/icon";
+import { eq } from 'drizzle-orm';
 
 import { createClient } from "../utils/supabase/server";
-import { prisma } from "../lib/prisma"; // Your Prisma 7 client with Driver Adapter
+import { db } from "../lib/db";
+import { profiles } from "@/drizzle/schema";
 
 const RECENT_AGREEMENTS = [
   {
@@ -42,18 +36,62 @@ const RECENT_AGREEMENTS = [
 ];
 
 export default async function DashboardPage() {
+
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return redirect("/auth/login");
 
-  // Fetch the profile created by the SQL Trigger
-  const profile = await prisma.profile.findUnique({
-    where: { id: user.id },
-    include: { leases: true }, // Bring in their leases too!
-  });
+  let profile = null;
+
+  
+
+  try {
+    // 1. Try to find the user in Neon using the Supabase ID
+    profile = await db.query.profiles.findFirst({
+      where: eq(profiles.supabaseUserId, user.id), // Use the specific bridge column
+      with: { leases: true },
+    });
+
+    // 2. "First Login" Sync: If they don't exist in Neon yet, create them
+    if (!profile) {
+
+      console.log('Syncing new user to Neon...');
+      const [newProfile] = await db.insert(profiles).values({
+        supabaseUserId: user.id,
+        email: user.email!,
+        fullName: user.user_metadata?.full_name || "New User",
+      }).returning();
+      
+      profile = { ...newProfile, leases: [] };
+    }
+
+  } catch (error) {
+    console.error("❌ Database error:", error);
+    // Fallback logic remains the same...
+
+     profile = {
+      id: user.id,
+      fullName: user.user_metadata?.full_name || user.user_metadata?.name || "User",
+      email: user.email,
+      companyName: null,
+      onboarded: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      leases: [],
+    };
+
+  }
+
+  // 3. Check if user has completed onboarding (outside try-catch to allow redirect to work)
+  if (!profile.onboarded) {
+    return redirect("/onboarding");
+  }
+
+
+  
+
 
   return (
     <div className="layout-content-container flex flex-col max-w-240 flex-1 mx-auto">
@@ -76,13 +114,13 @@ export default async function DashboardPage() {
               className="flex items-center justify-center rounded-lg h-12 px-5 bg-primary hover:bg-blue-700 text-white font-bold transition-all shadow-md shadow-blue-500/20"
             >
               <span className="pr-4">
-                <PlusCircle />
+                <Icon name="plus-circle-solid" className="w-5 h-5" />
               </span>
               Start New Lease
             </Link>
             <button className="flex items-center justify-center rounded-lg h-12 px-5 bg-white dark:bg-gray-800 border border-[#dbdfe6] dark:border-gray-700 text-[#111318] dark:text-white font-bold hover:bg-gray-50 transition-colors">
               <span className="pr-4">
-                <FolderArchive />
+                <Icon name="folder-archive" className="w-5 h-5" />
               </span>
               Open Saved Draft
             </button>
@@ -117,7 +155,7 @@ export default async function DashboardPage() {
                 >
                   <td className="px-4 py-4 text-sm font-medium">
                     <div className="flex items-center gap-2">
-                      <Users />
+                      <Icon name="users" className="w-4 h-4" />
                       {lease.tenant}
                     </div>
                   </td>
@@ -130,13 +168,12 @@ export default async function DashboardPage() {
                   <td className="px-4 py-4">
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium 
-                      ${
-                        lease.statusColor === "yellow"
+                      ${lease.statusColor === "yellow"
                           ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
                           : lease.statusColor === "green"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                      }`}
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                        }`}
                     >
                       {lease.status}
                     </span>
@@ -154,17 +191,17 @@ export default async function DashboardPage() {
           {
             title: "Lease Templates",
             desc: "Browse pre-approved templates.",
-            icon: <GavelIcon />,
+            iconName: "gavel",
           },
           {
             title: "Legal Guides",
             desc: "Understand state legalities.",
-            icon: <GavelIcon />,
+            iconName: "gavel",
           },
           {
             title: "FAQs",
             desc: "Common questions answered.",
-            icon: <HelpCircle />,
+            iconName: "help-circle",
           },
         ].map((resource, i) => (
           <div
@@ -172,7 +209,7 @@ export default async function DashboardPage() {
             className="group p-6 rounded-xl border border-[#dbdfe6] dark:border-gray-700 bg-white dark:bg-[#1a202c] hover:shadow-md transition-all cursor-pointer"
           >
             <div className="size-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-primary mb-4">
-              {resource.icon}
+              <Icon name={resource.iconName} className="w-5 h-5" />
             </div>
             <h3 className="font-bold group-hover:text-primary transition-colors">
               {resource.title}

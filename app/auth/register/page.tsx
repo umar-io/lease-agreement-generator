@@ -2,13 +2,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Eye, EyeOff , Quote } from "lucide-react";
+import { signup } from "../action";
+import { useActionState } from "react";
+import { Logo } from "@/app/components/logo";
+import { Icon } from "@/app/components/icon";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  
+  const [passwordMatch, setPasswordMatch] = useState(true);
+  const [state, formAction, isPending] = useActionState(signup, undefined);
 
   return (
     <div className="font-display bg-background-light dark:bg-background-dark text-[#111318] dark:text-white antialiased">
@@ -16,24 +19,9 @@ export default function RegisterPage() {
         {/* Left Section: Form */}
         <div className="flex flex-1 flex-col justify-center px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24 bg-white dark:bg-[#151c2b] border-r border-[#f0f2f4] dark:border-gray-800">
           <div className="mx-auto w-full max-w-sm lg:w-96">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-3 mb-10 group">
-              <div className="size-10 text-primary transition-transform group-hover:scale-110">
-                <svg
-                  fill="none"
-                  viewBox="0 0 48 48"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold tracking-tight">
-                Lease Generator
-              </h2>
-            </Link>
+            <div className="mb-10">
+              <Logo />
+            </div>
 
             <div className="mb-8">
               <h1 className="text-3xl font-bold tracking-tight">
@@ -44,10 +32,13 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <form
-              className="mt-8 space-y-6"
-              onSubmit={(e) => e.preventDefault()}
-            >
+            <form className="mt-8 space-y-6" action={formAction}>
+              {state?.error && (
+                <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+                  {state.error}
+                </div>
+              )}
+
               <div>
                 <label
                   className="block text-sm font-medium dark:text-gray-200"
@@ -57,10 +48,12 @@ export default function RegisterPage() {
                 </label>
                 <input
                   id="email"
+                  name="email"
                   type="email"
-                  className="mt-2 block px-4 w-full rounded-lg border-0 py-3 text-[#111318] dark:text-white shadow-sm ring-1 ring-inset ring-[#dbdfe6] dark:ring-gray-700 placeholder:text-[#616f89] focus:ring-2 focus:ring-primary dark:bg-[#1a2332] sm:text-sm"
+                  className="mt-2 block px-4 w-full rounded-lg border-0 py-3 text-[#111318] dark:text-white shadow-sm ring-1 ring-inset ring-[#dbdfe6] dark:ring-gray-700 placeholder:text-[#616f89] focus:ring-2 focus:ring-primary dark:bg-[#1a2332] sm:text-sm disabled:opacity-50"
                   placeholder="name@company.com"
                   required
+                  disabled={isPending}
                 />
               </div>
 
@@ -75,19 +68,21 @@ export default function RegisterPage() {
                 <div className="mt-2 relative">
                   <input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
-                    className="block w-full rounded-lg border-0 py-3 px-4 pr-10 ring-1 ring-[#dbdfe6] dark:ring-gray-700 dark:bg-[#1a2332] sm:text-sm"
-                    placeholder="Create a password"
+                    className="block w-full rounded-lg border-0 py-3 px-4 pr-10 ring-1 ring-[#dbdfe6] dark:ring-gray-700 dark:bg-[#1a2332] sm:text-sm disabled:opacity-50"
+                    placeholder="Create a password (min 8 characters)"
                     required
+                    minLength={8}
+                    disabled={isPending}
+                    onChange={() => setPasswordMatch(true)}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#616f89] hover:text-primary transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[20px]">
-                      {showPassword ? <EyeOff /> : <Eye />}
-                    </span>
+                    <Icon name={showPassword ? "eye-off" : "eye"} className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -103,29 +98,50 @@ export default function RegisterPage() {
                 <div className="mt-2 relative">
                   <input
                     id="confirm-password"
+                    name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
-                    className="block w-full rounded-lg border-0 py-3 px-4 pr-10 ring-1 ring-[#dbdfe6] dark:ring-gray-700 dark:bg-[#1a2332] sm:text-sm"
+                    className={`block w-full rounded-lg border-0 py-3 px-4 pr-10 ring-1 ${
+                      passwordMatch
+                        ? "ring-[#dbdfe6] dark:ring-gray-700"
+                        : "ring-red-500 dark:ring-red-500"
+                    } dark:bg-[#1a2332] sm:text-sm disabled:opacity-50`}
                     placeholder="Confirm your password"
                     required
+                    minLength={8}
+                    disabled={isPending}
+                    onChange={(e) => {
+                      const password = (document.getElementById(
+                        "password"
+                      ) as HTMLInputElement)?.value;
+                      setPasswordMatch(e.target.value === password);
+                    }}
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
                     className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#616f89] hover:text-primary transition-colors"
                   >
-                    <span className="material-symbols-outlined text-[20px]">
-                      {showConfirmPassword ? <EyeOff /> : <Eye />}
-                    </span>
+                    <Icon
+                      name={showConfirmPassword ? "eye-off" : "eye"}
+                      className="w-5 h-5"
+                    />
                   </button>
                 </div>
+                {!passwordMatch && (
+                  <p className="text-red-500 text-sm mt-1">Passwords do not match</p>
+                )}
               </div>
 
               <div className="flex items-center">
                 <input
                   id="terms"
+                  name="terms"
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary disabled:opacity-50"
                   required
+                  disabled={isPending}
                 />
                 <label
                   htmlFor="terms"
@@ -150,9 +166,10 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                className="flex w-full justify-center rounded-lg bg-primary px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 transition-all active:scale-[0.98]"
+                disabled={isPending || !passwordMatch}
+                className="flex w-full justify-center rounded-lg bg-primary px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign up
+                {isPending ? "Creating account..." : "Sign up"}
               </button>
             </form>
 
@@ -165,20 +182,20 @@ export default function RegisterPage() {
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4">
-                <button className="flex w-full items-center justify-center gap-3 rounded-lg bg-white dark:bg-[#1a2332] px-3 py-2.5 text-sm font-semibold ring-1 ring-[#dbdfe6] dark:ring-gray-700 hover:bg-gray-50 transition-colors">
-                  <img
-                    src="https://www.svgrepo.com/show/475656/google-color.svg"
-                    className="h-5 w-5"
-                    alt="Google"
-                  />
+                <button
+                  type="button"
+                  disabled={isPending}
+                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-white dark:bg-[#1a2332] px-3 py-2.5 text-sm font-semibold ring-1 ring-[#dbdfe6] dark:ring-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Icon name="google" className="w-5 h-5" />
                   Google
                 </button>
-                <button className="flex w-full items-center justify-center gap-3 rounded-lg bg-white dark:bg-[#1a2332] px-3 py-2.5 text-sm font-semibold ring-1 ring-[#dbdfe6] dark:ring-gray-700 hover:bg-gray-50 transition-colors">
-                  <img
-                    src="https://www.svgrepo.com/show/448239/microsoft.svg"
-                    className="h-5 w-5"
-                    alt="Microsoft"
-                  />
+                <button
+                  type="button"
+                  disabled={isPending}
+                  className="flex w-full items-center justify-center gap-3 rounded-lg bg-white dark:bg-[#1a2332] px-3 py-2.5 text-sm font-semibold ring-1 ring-[#dbdfe6] dark:ring-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Icon name="microsoft" className="w-5 h-5" />
                   Microsoft
                 </button>
               </div>
@@ -187,7 +204,7 @@ export default function RegisterPage() {
             <p className="mt-10 text-center text-sm text-[#616f89] dark:text-gray-400">
               Already have an account?{" "}
               <Link
-                href="/authlogin"
+                href="/auth/login"
                 className="font-semibold text-primary hover:underline"
               >
                 Log in
@@ -206,9 +223,7 @@ export default function RegisterPage() {
           />
           <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
           <div className="absolute bottom-0 p-20 text-white">
-            <span className="material-symbols-outlined text-4xl text-primary mb-4">
-             <Quote />
-            </span>
+            <Icon name="quote" className="text-4xl text-primary mb-4" />
             <p className="text-2xl font-medium leading-relaxed max-w-lg italic">
               "This lease generator has completely transformed how we manage our
               rental properties. It's fast, legally compliant, and incredibly

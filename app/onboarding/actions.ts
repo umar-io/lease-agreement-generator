@@ -1,7 +1,9 @@
 "use server";
 import { redirect } from "next/navigation";
 import { createClient } from "../utils/supabase/server";
-import { prisma } from "../lib/prisma";
+import { db } from "../lib/db";
+import { profiles } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export async function saveOnboarding(formData: FormData) {
   const supabase = await createClient();
@@ -14,22 +16,32 @@ export async function saveOnboarding(formData: FormData) {
   const fullName = formData.get("fullName") as string;
   const companyName = formData.get("companyName") as string;
 
-  // Create or update the profile in our database
-  await prisma.profile.upsert({
-    where: { id: user.id },
-    update: {
-      fullName,
-      companyName,
-      onboarded: true,
-    },
-    create: {
-      id: user.id,
+  // Check if profile exists
+  const existingProfile = await db.query.profiles.findFirst({
+    where: eq(profiles.supabaseUserId, user.id),
+  });
+
+  if (existingProfile) {
+    // Update existing profile
+    await db
+      .update(profiles)
+      .set({
+        fullName,
+        companyName,
+        onboarded: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(profiles.supabaseUserId, user.id));
+  } else {
+    // Create new profile
+    await db.insert(profiles).values({
+      supabaseUserId: user.id,
       email: user.email!,
       fullName,
       companyName,
       onboarded: true,
-    },
-  });
+    });
+  }
 
   redirect("/dashboard");
 }

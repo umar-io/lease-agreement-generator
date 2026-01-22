@@ -1,5 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -53,9 +57,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (user && !request.nextUrl.pathname.startsWith("/onboarding")) {
-    // You would typically check a metadata flag or do a quick DB check here
-    // For now, let's just make sure they can reach the onboarding page
+  // 4. ONBOARDING CHECK
+  // If user is trying to access dashboard, settings, or documents, check if they've completed onboarding
+  if (
+    user &&
+    (request.nextUrl.pathname.startsWith("/dashboard") ||
+      request.nextUrl.pathname.startsWith("/settings") ||
+      request.nextUrl.pathname.startsWith("/documents") ||
+      request.nextUrl.pathname.startsWith("/generate"))
+  ) {
+    try {
+      const db = drizzle(postgres(process.env.DATABASE_URL!), { schema });
+      const profile = await db.query.profiles.findFirst({
+        where: eq(schema.profiles.supabaseUserId, user.id),
+      });
+
+      // If profile doesn't exist or not onboarded, redirect to onboarding
+      if (!profile || !profile.onboarded) {
+        return NextResponse.redirect(new URL("/onboarding", request.url));
+      }
+    } catch (error) {
+      console.error("Middleware DB error:", error);
+      // On error, allow access (fail open) to prevent lockout
+    }
   }
 
   return response;
