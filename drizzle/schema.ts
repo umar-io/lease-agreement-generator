@@ -1,31 +1,30 @@
-import { pgTable, uuid, text, timestamp, boolean } from "drizzle-orm/pg-core";
+// drizzle/schema.ts
+import { pgTable, text, timestamp, boolean, uuid } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-// 1. PROFILES TABLE (The Bridge)
 export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey().defaultRandom(), // Internal Neon ID
-  supabaseUserId: text("supabase_user_id").notNull().unique(), // ID from Supabase Auth
+  id: uuid("id").defaultRandom().primaryKey(),
+  supabaseUserId: uuid("supabase_user_id").notNull().unique(), // Maps to snake_case in DB
   email: text("email").notNull(),
   fullName: text("full_name"),
   companyName: text("company_name"),
-  onboarded: boolean("onboarded").default(false),
+  onboarded: boolean("onboarded").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// 2. LEASES TABLE
 export const leases = pgTable("leases", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  profileId: uuid("profile_id").references(() => profiles.id, { onDelete: "cascade" }),
-  tenantName: text("tenant_name").notNull(),
-  address: text("address").notNull(),
-  status: text("status").default("Draft"), // e.g., Draft, Finalized, Review
+  id: uuid("id").defaultRandom().primaryKey(),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  tenantName: text("tenant_name"),
+  address: text("address"),
+  status: text("status").default("draft").notNull(),
   content: text("content"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// 3. RELATIONS (Required for db.query... syntax)
+// Define relations
 export const profilesRelations = relations(profiles, ({ many }) => ({
   leases: many(leases),
 }));

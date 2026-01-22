@@ -48,12 +48,12 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/settings") ||
       request.nextUrl.pathname.startsWith("/documents"))
   ) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
   // 3. LOGGED-IN REDIRECT
   // If user is logged in and tries to go to /login, send them to dashboard
-  if (user && request.nextUrl.pathname.startsWith("/login")) {
+  if (user && request.nextUrl.pathname.startsWith("/auth/login")) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

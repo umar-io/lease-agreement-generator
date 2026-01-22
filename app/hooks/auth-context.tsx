@@ -1,7 +1,6 @@
 'use client';
 
 import { useContext, useState, createContext, ReactNode, useEffect } from "react";
-import { createClient } from "@/app/utils/supabase/server";
 
 // Type definitions
 export interface UserProfile {
@@ -33,23 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch user profile
+  // Fetch user profile from API
   const fetchUserProfile = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const supabase = await createClient();
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
-
-      if (!authUser) {
-        setUser(null);
-        return;
-      }
-
-      // Fetch profile from Neon database
+      // Call the API endpoint to get user profile
       const response = await fetch("/api/auth/profile", {
         method: "GET",
         headers: {
@@ -57,17 +46,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
+      if (response.status === 401) {
+        // User not authenticated
+        setUser(null);
+        setError(null);
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error("Failed to fetch user profile");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to fetch user profile");
       }
 
       const profile = await response.json();
-      setUser(profile);
+      if (profile) {
+        setUser(profile);
+        setError(null);
+      }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "An error occurred";
       setError(errorMessage);
       console.error("Auth error:", err);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -81,8 +82,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Sign out
   const signOut = async () => {
     try {
-      const supabase = await createClient();
-      await supabase.auth.signOut();
+      const response = await fetch("/api/auth/signout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to sign out");
+      }
+
       setUser(null);
     } catch (err) {
       console.error("Sign out error:", err);

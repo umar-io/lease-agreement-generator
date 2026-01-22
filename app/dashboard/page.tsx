@@ -1,40 +1,11 @@
+// app/dashboard/page.tsx
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon } from "@/app/components/icon";
-
 import { createClient } from "../utils/supabase/server";
 import { fetchOrCreateUserProfile, createFallbackProfile } from "../lib/profile-service";
 
-const RECENT_AGREEMENTS = [
-  {
-    id: 1,
-    tenant: "John Doe",
-    address: "123 Maple St, Springfield",
-    date: "Oct 24, 2023",
-    status: "Draft",
-    statusColor: "yellow",
-  },
-  {
-    id: 2,
-    tenant: "Jane Smith",
-    address: "456 Oak Ave, Shelbyville",
-    date: "Oct 20, 2023",
-    status: "Finalized",
-    statusColor: "green",
-  },
-  {
-    id: 3,
-    tenant: "Acme Corp",
-    address: "789 Pine Ln, Capital City",
-    date: "Oct 15, 2023",
-    status: "Review",
-    statusColor: "blue",
-  },
-];
-
 export default async function DashboardPage() {
-
-
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -50,7 +21,6 @@ export default async function DashboardPage() {
     );
   } catch (error) {
     console.error("❌ Database error:", error);
-    // Fallback to temporary profile
     profile = createFallbackProfile(
       user.id,
       user.email!,
@@ -63,9 +33,8 @@ export default async function DashboardPage() {
     return redirect("/onboarding");
   }
 
-
-  
-
+  // Use real leases from database or show empty state
+  const recentLeases = profile.leases?.slice(0, 5) || [];
 
   return (
     <div className="layout-content-container flex flex-col max-w-240 flex-1 mx-auto">
@@ -108,54 +77,72 @@ export default async function DashboardPage() {
           Recent Agreements
         </h2>
         <div className="overflow-hidden rounded-xl border border-[#dbdfe6] dark:border-gray-700 bg-white dark:bg-[#1a202c] shadow-sm">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-[#dbdfe6] dark:border-gray-700">
-                <th className="px-4 py-4 text-sm font-semibold">Tenant Name</th>
-                <th className="hidden sm:table-cell px-4 py-4 text-sm font-semibold">
-                  Property Address
-                </th>
-                <th className="hidden md:table-cell px-4 py-4 text-sm font-semibold">
-                  Last Edited
-                </th>
-                <th className="px-4 py-4 text-sm font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {RECENT_AGREEMENTS.map((lease) => (
-                <tr
-                  key={lease.id}
-                  className="border-b border-[#dbdfe6] dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <td className="px-4 py-4 text-sm font-medium">
-                    <div className="flex items-center gap-2">
-                      <Icon name="users" className="w-4 h-4" />
-                      {lease.tenant}
-                    </div>
-                  </td>
-                  <td className="hidden sm:table-cell px-4 py-4 text-[#616f89] dark:text-gray-400 text-sm">
-                    {lease.address}
-                  </td>
-                  <td className="hidden md:table-cell px-4 py-4 text-[#616f89] dark:text-gray-400 text-sm">
-                    {lease.date}
-                  </td>
-                  <td className="px-4 py-4">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium 
-                      ${lease.statusColor === "yellow"
-                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                          : lease.statusColor === "green"
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                        }`}
-                    >
-                      {lease.status}
-                    </span>
-                  </td>
+          {recentLeases.length > 0 ? (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-[#dbdfe6] dark:border-gray-700">
+                  <th className="px-4 py-4 text-sm font-semibold">Tenant Name</th>
+                  <th className="hidden sm:table-cell px-4 py-4 text-sm font-semibold">
+                    Property Address
+                  </th>
+                  <th className="hidden md:table-cell px-4 py-4 text-sm font-semibold">
+                    Last Edited
+                  </th>
+                  <th className="px-4 py-4 text-sm font-semibold">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentLeases.map((lease) => (
+                  <tr
+                    key={lease.id}
+                    className="border-b border-[#dbdfe6] dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <td className="px-4 py-4 text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <Icon name="users" className="w-4 h-4" />
+                        {lease.tenantName}
+                      </div>
+                    </td>
+                    <td className="hidden sm:table-cell px-4 py-4 text-[#616f89] dark:text-gray-400 text-sm">
+                      {lease.address}
+                    </td>
+                    <td className="hidden md:table-cell px-4 py-4 text-[#616f89] dark:text-gray-400 text-sm">
+                      {new Date(lease.updatedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium 
+                        ${lease.status === "Draft"
+                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                            : lease.status === "Finalized"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                              : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                          }`}
+                      >
+                        {lease.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-12 text-center">
+              <Icon name="folder-archive" className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-[#111318] dark:text-white mb-2">
+                No leases yet
+              </h3>
+              <p className="text-[#616f89] dark:text-gray-400 mb-4">
+                Get started by creating your first lease agreement
+              </p>
+              <Link
+                href="/generate"
+                className="inline-flex items-center justify-center rounded-lg h-10 px-4 bg-primary hover:bg-blue-700 text-white font-bold transition-all"
+              >
+                Create Lease
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

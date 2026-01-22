@@ -2,6 +2,11 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "@/drizzle/schema"; // 1. Import your entire schema
 
+
+import dns from "dns";
+
+dns.setDefaultResultOrder("ipv4first");
+
 const connectionString = process.env.DATABASE_URL!;
 
 // 2. Disable prefetch for Neon/Serverless environments if using postgres.js
