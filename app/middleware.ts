@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { isUserOnboarded } from "@/app/lib/profile-service";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -67,17 +67,14 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/generate"))
   ) {
     try {
-      const db = drizzle(postgres(process.env.DATABASE_URL!), { schema });
-      const profile = await db.query.profiles.findFirst({
-        where: eq(schema.profiles.supabaseUserId, user.id),
-      });
+      const onboarded = await isUserOnboarded(user.id);
 
-      // If profile doesn't exist or not onboarded, redirect to onboarding
-      if (!profile || !profile.onboarded) {
+      // If not onboarded, redirect to onboarding
+      if (!onboarded) {
         return NextResponse.redirect(new URL("/onboarding", request.url));
       }
     } catch (error) {
-      console.error("Middleware DB error:", error);
+      console.error("Middleware onboarding check error:", error);
       // On error, allow access (fail open) to prevent lockout
     }
   }

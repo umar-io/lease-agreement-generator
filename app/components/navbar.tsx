@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
+import { useAuth } from "@/app/hooks/auth-context";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: "layout-dashboard" },
@@ -31,6 +32,7 @@ function NavbarContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const { user, isLoading, signOut } = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,6 +47,14 @@ function NavbarContent() {
     return () =>
       document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60">
@@ -105,13 +115,14 @@ function NavbarContent() {
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-3 pl-2 py-1 pr-1 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900"
+                disabled={isLoading}
               >
                 <div className="hidden lg:block text-right">
                   <p className="text-sm font-bold dark:text-white leading-none">
-                    Alex Rivera
+                    {user?.fullName || 'User'}
                   </p>
                   <p className="text-[11px] text-primary font-bold mt-1 uppercase tracking-wider">
-                    Pro Plan
+                    Pro
                   </p>
                 </div>
 
@@ -147,7 +158,10 @@ function NavbarContent() {
 
                   <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
 
-                  <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30">
+                  <button 
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
                     <Icon name="log-out" className="w-4 h-4" />
                     Sign Out
                   </button>
@@ -198,7 +212,10 @@ function NavbarContent() {
             ))}
 
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button className="w-full flex items-center gap-4 px-5 py-4 text-lg font-bold text-red-500">
+              <button 
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-4 px-5 py-4 text-lg font-bold text-red-500"
+              >
                 <Icon name="log-out" className="w-6 h-6" />
                 Sign Out
               </button>

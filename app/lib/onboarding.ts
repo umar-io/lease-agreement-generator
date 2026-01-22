@@ -1,7 +1,5 @@
 import { createClient } from "../utils/supabase/server";
-import { db } from "./db";
-import { profiles } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { getUserProfile, isUserOnboarded as checkOnboardingStatus } from "./profile-service";
 
 /**
  * Check if the current user has completed onboarding
@@ -17,11 +15,7 @@ export async function isUserOnboarded(): Promise<boolean> {
   }
 
   try {
-    const profile = await db.query.profiles.findFirst({
-      where: eq(profiles.supabaseUserId, user.id),
-    });
-
-    return profile?.onboarded ?? false;
+    return await checkOnboardingStatus(user.id);
   } catch (error) {
     console.error("Error checking onboarding status:", error);
     return false;
@@ -41,12 +35,7 @@ export async function getCurrentUserProfile() {
   }
 
   try {
-    const profile = await db.query.profiles.findFirst({
-      where: eq(profiles.supabaseUserId, user.id),
-      with: { leases: true },
-    });
-
-    return profile;
+    return await getUserProfile(user.id);
   } catch (error) {
     console.error("Error fetching user profile:", error);
     return null;

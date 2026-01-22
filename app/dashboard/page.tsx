@@ -1,12 +1,9 @@
-import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Icon } from "@/app/components/icon";
-import { eq } from 'drizzle-orm';
 
 import { createClient } from "../utils/supabase/server";
-import { db } from "../lib/db";
-import { profiles } from "@/drizzle/schema";
+import { fetchOrCreateUserProfile, createFallbackProfile } from "../lib/profile-service";
 
 const RECENT_AGREEMENTS = [
   {
@@ -45,46 +42,23 @@ export default async function DashboardPage() {
 
   let profile = null;
 
-  
-
   try {
-    // 1. Try to find the user in Neon using the Supabase ID
-    profile = await db.query.profiles.findFirst({
-      where: eq(profiles.supabaseUserId, user.id), // Use the specific bridge column
-      with: { leases: true },
-    });
-
-    // 2. "First Login" Sync: If they don't exist in Neon yet, create them
-    if (!profile) {
-
-      console.log('Syncing new user to Neon...');
-      const [newProfile] = await db.insert(profiles).values({
-        supabaseUserId: user.id,
-        email: user.email!,
-        fullName: user.user_metadata?.full_name || "New User",
-      }).returning();
-      
-      profile = { ...newProfile, leases: [] };
-    }
-
+    profile = await fetchOrCreateUserProfile(
+      user.id,
+      user.email!,
+      user.user_metadata?.full_name
+    );
   } catch (error) {
     console.error("❌ Database error:", error);
-    // Fallback logic remains the same...
-
-     profile = {
-      id: user.id,
-      fullName: user.user_metadata?.full_name || user.user_metadata?.name || "User",
-      email: user.email,
-      companyName: null,
-      onboarded: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      leases: [],
-    };
-
+    // Fallback to temporary profile
+    profile = createFallbackProfile(
+      user.id,
+      user.email!,
+      user.user_metadata?.full_name || user.user_metadata?.name
+    );
   }
 
-  // 3. Check if user has completed onboarding (outside try-catch to allow redirect to work)
+  // Check if user has completed onboarding
   if (!profile.onboarded) {
     return redirect("/onboarding");
   }

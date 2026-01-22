@@ -1,9 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { createClient } from "../utils/supabase/server";
-import { db } from "../lib/db";
-import { profiles } from "@/drizzle/schema";
-import { eq } from "drizzle-orm";
+import { fetchOrCreateUserProfile, updateUserProfile } from "../lib/profile-service";
 
 export async function saveOnboarding(formData: FormData) {
   const supabase = await createClient();
@@ -16,32 +14,20 @@ export async function saveOnboarding(formData: FormData) {
   const fullName = formData.get("fullName") as string;
   const companyName = formData.get("companyName") as string;
 
-  // Check if profile exists
-  const existingProfile = await db.query.profiles.findFirst({
-    where: eq(profiles.supabaseUserId, user.id),
-  });
+  try {
+    // Ensure profile exists
+    await fetchOrCreateUserProfile(user.id, user.email!);
 
-  if (existingProfile) {
-    // Update existing profile
-    await db
-      .update(profiles)
-      .set({
-        fullName,
-        companyName,
-        onboarded: true,
-        updatedAt: new Date(),
-      })
-      .where(eq(profiles.supabaseUserId, user.id));
-  } else {
-    // Create new profile
-    await db.insert(profiles).values({
-      supabaseUserId: user.id,
-      email: user.email!,
+    // Update with onboarding data
+    await updateUserProfile(user.id, {
       fullName,
       companyName,
       onboarded: true,
     });
-  }
 
-  redirect("/dashboard");
+    redirect("/dashboard");
+  } catch (error) {
+    console.error("Onboarding error:", error);
+    throw error;
+  }
 }
