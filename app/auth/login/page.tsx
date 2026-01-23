@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { login } from "../action";
+import { login } from "@/app/auth/action";
 import { useActionState } from "react";
 import { Logo } from "@/app/_components/logo";
 import Icon  from "@/app/_components/icon";

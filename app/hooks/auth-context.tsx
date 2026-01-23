@@ -63,6 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(profile);
         setError(null);
       }
+
+    //   console.log(profile)
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "An error occurred";

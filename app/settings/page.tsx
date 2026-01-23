@@ -1,5 +1,7 @@
+// app/settings/page.tsx
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Icon from "@/app/_components/icon";
 import {
   User,
   Lock,
@@ -12,8 +14,75 @@ import {
   Check,
 } from "lucide-react";
 
+import { useAuth } from "@/app/hooks/auth-context";
+
 export default function SettingsPage() {
+  const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
+  const [formField, setformField] = useState({
+    email: "",
+    fullName: "",
+    companyName: "",
+  });
+
+  const [password, setPassword] = useState({
+    current: "",
+    new: ""
+  });
+
+  const isDirty = formField.email !== user?.email || formField.fullName !== user?.fullName || formField.companyName !== user?.companyName
+
+  useEffect(() => {
+    if (user) {
+      setformField({
+        email: user?.email || '',
+        fullName: user?.fullName || '',
+        companyName: user?.companyName || '',
+      })
+    }
+  }, [user])
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto py-10 px-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-slate-500">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if no user
+  if (!user) {
+    return (
+      <div className="max-w-5xl mx-auto py-10 px-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-slate-500">Please log in to view settings</div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setformField((prev) => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPassword((prev) => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  const handleProfileUpdate = () =>{
+
+  }
 
   return (
     <div className="max-w-5xl mx-auto py-10 px-6">
@@ -68,14 +137,44 @@ export default function SettingsPage() {
                     />
                     <input
                       type="email"
-                      defaultValue="alex@example.com"
+                      name='email'
+                      value={formField.email}
+                      readOnly
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </div>
-                <button className="w-fit px-6 py-2 bg-primary text-white rounded-lg font-bold text-sm">
-                  Save Email
-                </button>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Full Name</label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formField.fullName}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold">Company Name</label>
+                  <input
+                    type="text"
+                    name="companyName"
+                    value={formField.companyName}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+
+                {
+                  isDirty && (
+                    <button className="pointer w-fit px-6 py-2 bg-primary text-white rounded-lg font-bold text-sm" onClick={handleProfileUpdate }>
+                      Save Changes
+                    </button>
+                  )
+                }
               </div>
             </div>
           )}
@@ -93,14 +192,20 @@ export default function SettingsPage() {
                     Current Password
                   </label>
                   <input
+                    name="current"
+                    value={password.current}
                     type="password"
+                    onChange={handlePasswordChange}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold">New Password</label>
                   <input
+                    name="new"
+                    value={password.new}
                     type="password"
+                    onChange={handlePasswordChange}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
@@ -143,10 +248,15 @@ export default function SettingsPage() {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">Documents Generated</span>
-                  <span className="text-slate-500">12 / Unlimited</span>
+                  <span className="text-slate-500">
+                    {user.leases?.length || 0} / Unlimited
+                  </span>
                 </div>
                 <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full">
-                  <div className="h-full w-[40%] bg-primary rounded-full" />
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{ width: `${Math.min((user.leases?.length || 0) * 10, 100)}%` }}
+                  />
                 </div>
               </div>
             </div>
@@ -163,11 +273,10 @@ function TabButton({ active, onClick, icon, label }: any) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-        active
-          ? "bg-primary text-white shadow-lg shadow-primary/20"
-          : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
-      }`}
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${active
+        ? "bg-primary text-white shadow-lg shadow-primary/20"
+        : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800"
+        }`}
     >
       {icon}
       {label}

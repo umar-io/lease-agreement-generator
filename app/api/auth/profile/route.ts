@@ -1,51 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
+// app/api/auth/profile/route.ts
 import { createClient } from "@/app/utils/supabase/server";
-import { fetchOrCreateUserProfile } from "@/app/lib/profile-service";
+import { NextResponse } from "next/server";
+import { getUserProfile } from "@/app/lib/profile-service";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized", profile: null },
-        { status: 401 }
-      );
+    if (error || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    try {
-      const profile = await fetchOrCreateUserProfile(
-        user.id,
-        user.email!,
-        user.user_metadata?.full_name
-      );
+    // Get full profile from Neon
+    const profile = await getUserProfile(user.id);
 
-      return NextResponse.json(profile);
-    } catch (dbError) {
-      console.error("Database error in profile API:", dbError);
-      // Return a minimal profile on database error
-      return NextResponse.json(
-        {
-          id: user.id,
-          supabaseUserId: user.id,
-          email: user.email || "",
-          fullName: user.user_metadata?.full_name || "User",
-          companyName: null,
-          onboarded: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          leases: [],
-        },
-        { status: 200 }
-      );
+    if (!profile) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
+
+    return NextResponse.json(profile);
   } catch (error) {
-    console.error("Profile API error:", error);
+    console.error("Profile fetch error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch profile", profile: null },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
