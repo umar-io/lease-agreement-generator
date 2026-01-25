@@ -3,10 +3,8 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    // Matches your utility: async and 0 arguments
     const supabase = await createClient();
 
-    // Use a type cast or interface to fix the 'any' error
     const { currentPassword, newPassword } = (await request.json()) as {
       currentPassword?: string;
       newPassword?: string;
@@ -19,16 +17,19 @@ export async function POST(request: Request) {
 
     // 2. Session Check
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    if (userError || !user || !user.email) {
       return NextResponse.json({ error: "Session expired. Please log in again." }, { status: 401 });
     }
 
-    // 3. Reauthentication
-    const { error: reauthError } = await supabase.auth.reauthenticate({
+    // 3. Manual Verification (Reauthentication replacement)
+    // We sign in with the current user's email and the provided password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
       password: currentPassword,
     });
 
-    if (reauthError) {
+    if (signInError) {
+      // If sign-in fails, the password is wrong or the account is locked
       return NextResponse.json({ error: "Incorrect current password" }, { status: 401 });
     }
 

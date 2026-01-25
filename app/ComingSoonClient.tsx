@@ -117,7 +117,7 @@ export default function ComingSoon() {
                 Be among the first to experience the future of lease management. 
                 Early access members get exclusive pricing and priority support.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button className="btn btn-primary">
                   Request Early Access
                 </button>
