@@ -38,7 +38,7 @@ export async function signup(prevState: any, formData: FormData) {
     redirect('/dashboard')
   } else {
     // Redirect to a page telling them to check their email
-    redirect('/auth/check-email')
+    redirect('/auth/verify-mail')
   }
 }
 

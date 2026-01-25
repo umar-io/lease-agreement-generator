@@ -1,30 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fdfdfe; /* Slightly warmer white for a "paper" feel */
-  --foreground: #0f172a; /* Slate 900 */
+  --background: #ffffff;
+  --foreground: #000000;
 }
 
 @theme inline {
-  /* The "Human" Font Choice */
+  /* Clean Typography */
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui;
-  --font-display: var(--font-jakarta), "Inter", sans-serif;
+  --font-display: var(--font-jakarta), ui-sans-serif, system-ui;
 
-  /* Custom Colors */
-  --color-primary: #135bec;
-  --color-primary-hover: #0f4bc0;
-  --color-background-light: #f8fafc; /* Slate 50 */
-  --color-background-dark: #020617;  /* Slate 950 */
-  --color-card-dark: #0f172a;       /* Slate 900 */
-  
-  /* Adding a "Human" Shadow */
-  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.04);
+  /* Minimal Color Palette */
+  --color-primary: #000000;
+  --color-primary-hover: #1a1a1a;
+  --color-background: #ffffff;
+  --color-surface: #f9f9f9;
+  --color-border: #e5e5e5;
+  --color-text: #000000;
+  --color-text-secondary: #666666;
+  --color-text-muted: #999999;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #020617;
-    --foreground: #f1f5f9;
+    --background: #000000;
+    --foreground: #ffffff;
+    --color-background: #000000;
+    --color-surface: #111111;
+    --color-border: #222222;
+    --color-text: #ffffff;
+    --color-text-secondary: #aaaaaa;
+    --color-text-muted: #666666;
   }
 }
 
@@ -33,17 +39,57 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-  font-feature-settings: "cv11", "ss01"; /* Modern font features for legibility */
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Make inputs feel less like defaults */
+/* Clean Input Styling */
 input, select, textarea {
-  @apply focus:ring-4 focus:ring-primary/10 transition-all duration-200 outline-none border-slate-200;
+  @apply border border-gray-300 dark:border-gray-700 focus:border-black dark:focus:border-white transition-colors duration-200 outline-none;
 }
 
-
+/* SVG Icons */
 svg {
   stroke: currentColor;
   fill: none;
+  stroke-width: 1.5;
+}
+
+/* Simple Animations */
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: transform 0.2s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-1px);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Buttons */
+.btn {
+  @apply px-6 py-3 font-medium transition-colors duration-200 rounded-lg;
+}
+
+.btn-primary {
+  @apply bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100;
+}
+
+.btn-secondary {
+  @apply bg-white text-black border border-gray-300 hover:bg-gray-50 dark:bg-black dark:text-white dark:border-gray-700 dark:hover:bg-gray-900;
 }

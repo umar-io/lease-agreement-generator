@@ -20,7 +20,8 @@ export default function Navbar() {
   if (
     pathname === "/" ||
     pathname === "/auth/register" ||
-    pathname === "/auth/login"
+    pathname === "/auth/login" ||
+    pathname === "/auth/verify-mail"
   )
     return null;
 

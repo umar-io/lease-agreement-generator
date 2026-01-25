@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { Icon } from "./_components/icon";
 
-
 function Feature({
   icon,
   title,
@@ -13,16 +12,15 @@ function Feature({
   desc: string;
 }) {
   return (
-    <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-2">
-      <div className="size-10 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center border border-slate-100 dark:border-slate-800">
-        <Icon name={icon} className="w-5 h-5 text-primary" />
+    <div className="text-center space-y-4 p-8">
+      <div className="w-12 h-12 mx-auto bg-black dark:bg-white rounded-full flex items-center justify-center">
+        <Icon name={icon} className="w-6 h-6 text-white dark:text-black" />
       </div>
-      <h3 className="font-bold text-slate-900 dark:text-white">{title}</h3>
-      <p className="text-sm text-slate-500 dark:text-slate-400">{desc}</p>
+      <h3 className="font-bold text-xl text-black dark:text-white">{title}</h3>
+      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{desc}</p>
     </div>
   );
 }
-
 
 export default function ComingSoon() {
   const [email, setEmail] = useState("");
@@ -32,91 +30,105 @@ export default function ComingSoon() {
     e.preventDefault();
     if (email) {
       setSubmitted(true);
-      // Here you would typically integrate with Mailchimp or Resend
     }
   };
 
   return (
-    <div className="py-[200px] relative isolate overflow-hidden bg-white dark:bg-slate-950 min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-6">
-      {/* Background Decorative Glow */}
-      <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
-        <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-primary to-[#9089fc] opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"></div>
-      </div>
+    <div className="min-h-screen bg-white dark:bg-black">
+      <div className="max-w-4xl mx-auto px-6 py-20">
+        <div className="text-center space-y-16">
+          {/* Launch Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-full">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              Launching Q2 2026
+            </span>
+          </div>
 
-      <div className="max-w-3xl text-center space-y-8">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider animate-bounce">
-          <Icon name="sparkles" className="w-4 h-4" />
-          Launching Q2 2026
-        </div>
+          {/* Hero Title */}
+          <div className="space-y-6">
+            <h1 className="text-6xl md:text-8xl font-bold tracking-tight text-black dark:text-white">
+              Generate bulletproof leases in minutes.
+            </h1>
+          </div>
 
-        {/* Hero Title */}
-        <h1 className="text-5xl md:text-7xl font-black tracking-tight text-slate-900 dark:text-white">
-          Generate bulletproof leases in{" "}
-          <span className="text-primary">minutes.</span>
-        </h1>
-
-        <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto">
-          The smarter way for landlords and property managers to create,
-          customize, and sign legal rental agreements without the lawyer fees.
-        </p>
-
-        {/* Email Waitlist */}
-        <div className="max-w-md mx-auto">
-          {!submitted ? (
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col sm:flex-row gap-3"
-            >
-              <input
-                type="email"
-                required
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary outline-none dark:text-white shadow-xl shadow-slate-200/50 dark:shadow-none"
-              />
-              <button
-                type="submit"
-                className="px-8 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
-              >
-                Join Waitlist <Icon name="arrow-right" className="w-5 h-5" />
-              </button>
-            </form>
-          ) : (
-            <div className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-bold border border-green-200 dark:border-green-800">
-              <Icon name="check-circle" className="w-6 h-6" /> You're on the list! We'll be in touch.
-            </div>
-          )}
-          <p className="mt-3 text-xs text-slate-400">
-            Join 500+ landlords already waiting.
+          <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto">
+            The smarter way for landlords and property managers to create,
+            customize, and sign legal rental agreements without the lawyer fees.
           </p>
-        </div>
 
-        {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-12 border-t border-slate-100 dark:border-slate-800">
-          <Feature
-            icon="shield-check"
-            title="Legally Valid"
-            desc="Attorney-reviewed templates for all 50 states."
-          />
+          {/* Email Waitlist */}
+          <div className="max-w-md mx-auto">
+            {!submitted ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-6 py-4 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-black dark:focus:border-white transition-colors duration-200 outline-none"
+                />
+                <button
+                  type="submit"
+                  className="w-full btn btn-primary"
+                >
+                  Join Waitlist
+                </button>
+              </form>
+            ) : (
+              <div className="p-6 border border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-950">
+                <p className="text-green-800 dark:text-green-200 font-medium">
+                  ✓ You're on the list! We'll be in touch.
+                </p>
+              </div>
+            )}
+            <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+              Join 2,400+ landlords already waiting.
+            </p>
+          </div>
 
-          <Feature
-            icon="zap"
-            title="Rapid Gen"
-            desc="Answer a few questions, get a PDF in seconds."
-          />
+          {/* Features */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-16 border-t border-gray-200 dark:border-gray-800">
+            <Feature
+              icon="shield-check"
+              title="Legally Valid"
+              desc="Attorney-reviewed templates for all 50 states, updated continuously for legal compliance."
+            />
+            <Feature
+              icon="zap"
+              title="Lightning Fast"
+              desc="Answer a few strategic questions, get a comprehensive PDF in under 60 seconds."
+            />
+            <Feature
+              icon="pen-tool"
+              title="Digital Signatures"
+              desc="Built-in e-signature workflow for landlords and tenants. Complete everything digitally."
+            />
+          </div>
 
-          <Feature
-            icon="clock"
-            title="E-Signatures"
-            desc="Built-in signing for you and your tenants."
-          />
-
+          {/* CTA Section */}
+          <div className="pt-16">
+            <div className="border border-gray-200 dark:border-gray-800 rounded-2xl p-12 max-w-2xl mx-auto">
+              <h3 className="text-2xl font-bold text-black dark:text-white mb-4">
+                Ready to revolutionize your rental process?
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                Be among the first to experience the future of lease management. 
+                Early access members get exclusive pricing and priority support.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button className="btn btn-primary">
+                  Request Early Access
+                </button>
+                <button className="btn btn-secondary">
+                  Learn More
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-

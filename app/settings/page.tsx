@@ -2,6 +2,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Icon from "@/app/_components/icon";
+import showToast from "@/app/ui/toast";
 import {
   User,
   Lock,
@@ -27,8 +28,10 @@ export default function SettingsPage() {
 
   const [password, setPassword] = useState({
     current: "",
-    new: ""
+    newPassword: ""
   });
+
+  const [isUpdating, setIsUpdating] = useState(false)
 
   const isDirty = formField.email !== user?.email || formField.fullName !== user?.fullName || formField.companyName !== user?.companyName
 
@@ -80,9 +83,88 @@ export default function SettingsPage() {
     }))
   }
 
-  const handleProfileUpdate = () =>{
+  const handleProfileUpdate = async () => {
+    // Strict Validation
+    if (!formField.fullName.trim() || !formField.companyName.trim()) {
+      showToast("Name and Company cannot be empty.", "error");
+      return;
+    }
 
-  }
+    setIsUpdating(true);
+
+    try {
+      const response = await fetch("/api/user/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: formField.fullName,
+          companyName: formField.companyName,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.error || "Failed to update profile");
+
+      showToast("Profile updated successfully!", "success");
+
+      // Optional: If you want the 'Save Changes' button to disappear 
+      // immediately without a full page refresh, you might need to 
+      // update your Auth Context or trigger a router.refresh()
+    } catch (err: any) {
+      showToast(err.message, "error");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // 1. Strict Validation
+    const { current, newPassword } = password;
+
+    if (!current) {
+      showToast("Please enter your current password.", "error")
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      showToast("New password must be at least 8 characters long.", "error");
+      return;
+    }
+
+    if (current === newPassword) {
+      showToast("New password cannot be the same as the current password.", "info");
+      return;
+    }
+
+    setIsUpdating(true)
+
+    try {
+      const response = await fetch("/api/auth/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: current,
+          newPassword: newPassword
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.error || "Failed to update password");
+
+      // 2. Success Logic
+      showToast("Password updated!", "success");
+      setPassword({ current: "", newPassword: "" });
+    } catch (err: any) {
+      showToast(err.message, "error");
+    }
+    finally {
+      setIsUpdating(false)
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto py-10 px-6">
@@ -170,7 +252,9 @@ export default function SettingsPage() {
 
                 {
                   isDirty && (
-                    <button className="pointer w-fit px-6 py-2 bg-primary text-white rounded-lg font-bold text-sm" onClick={handleProfileUpdate }>
+                    <button
+                      disabled={isUpdating}
+                      className={`${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer'} w-fit px-6 py-2 bg-primary text-white rounded-lg font-bold text-sm`} onClick={handleProfileUpdate}>
                       Save Changes
                     </button>
                   )
@@ -202,14 +286,16 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold">New Password</label>
                   <input
-                    name="new"
-                    value={password.new}
+                    name="newPassword"
+                    value={password.newPassword}
                     type="password"
                     onChange={handlePasswordChange}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
-                <button className="w-fit px-6 py-2 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-lg font-bold text-sm">
+                <button
+                  disabled={isUpdating}
+                  className={`${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer'} w-fit px-6 py-2 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-lg font-bold text-sm`} onClick={handlePasswordSubmit}>
                   Update Password
                 </button>
               </div>

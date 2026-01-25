@@ -4,12 +4,13 @@ import Navbar from './_components/navbar'
 import { AuthProvider } from './hooks/auth-context';
 import fs from "fs";
 import path from "path";
+import { ToastContainer } from 'react-toastify'
 
 // Configure the font
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-jakarta', // This matches the CSS variable above
+  variable: '--font-jakarta',
 });
 
 export default function RootLayout({
@@ -24,7 +25,6 @@ export default function RootLayout({
   );
 
   return (
-    // Add the variables to the body class
     <html lang="en" className={`${jakarta.variable}`}>
       <body className="antialiased">
         <AuthProvider>
@@ -34,6 +34,7 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{ __html: sprite }}
           />
           <Navbar />
+          <ToastContainer />
           <main className="flex-1 w-full">{children}</main>
         </AuthProvider>
       </body>
