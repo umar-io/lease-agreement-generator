@@ -1,46 +1,92 @@
 "use client";
 import React, { useState } from "react";
-import { 
-  Users, Home, Calendar, ClipboardCheck, 
-  ChevronRight, ChevronLeft, Mail, MapPin, 
-  DollarSign, PawPrint, Cigarette, FileText,
-  ArrowRight, Sparkles
-} from "lucide-react";
+import { Icon } from "@/app/_components/icon";
+import showToast from "@/app/ui/toast";
 
-function StepIndicator({ steps, currentStep }: { steps: any[], currentStep: number }) {
+// --- Types ---
+interface FormData {
+  // Step 1: Parties
+  landlordName: string;
+  tenantName: string;
+  landlordEmail: string;
+  tenantEmail: string;
+  // Step 2: Property
+  streetAddress: string;
+  unit: string;
+  city: string;
+  state: string;
+  zip: string;
+  // Step 3: Terms
+  startDate: string;
+  endDate: string;
+  monthlyRent: string;
+  securityDeposit: string;
+  // Step 4: Provisions
+  petsAllowed: boolean;
+  smokingPolicy: string;
+  additionalNotes: string;
+}
+
+interface Step {
+  id: number;
+  name: string;
+  icon: string;
+}
+
+interface FormFieldProps {
+  label: string;
+  name: keyof FormData;
+  placeholder?: string;
+  type?: string;
+  icon?: string;
+  value: string | number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  required?: boolean;
+  className?: string;
+}
+
+interface StepCardProps {
+  title: string;
+  icon?: string;
+  children: React.ReactNode;
+  isActive?: boolean;
+}
+
+// --- Components ---
+
+function StepIndicator({ steps, currentStep }: { steps: Step[], currentStep: number }) {
   return (
-    <div className="relative mb-12">
+    <div className="relative mb-16">
       {/* Background Track */}
-      <div className="absolute top-8 left-0 w-full h-0.5 bg-slate-200 dark:bg-slate-700" />
-      <div 
-        className="absolute top-8 left-0 h-0.5 bg-primary transition-all duration-500 ease-out rounded-full" 
+      <div className="absolute top-6 left-0 w-full h-px bg-gray-200 dark:bg-gray-800" />
+      <div
+        className="absolute top-6 left-0 h-px bg-black dark:bg-white transition-all duration-500 ease-out"
         style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
       />
-      
+
       {/* Step Nodes */}
       <div className="relative flex justify-between">
         {steps.map((step, index) => {
           const isActive = currentStep > index + 1;
           const isCurrent = currentStep === index + 1;
-          
+
           return (
             <div key={step.id} className="flex flex-col items-center group">
               {/* Step Circle */}
-              <div className={`relative size-16 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
-                isActive || isCurrent
-                  ? "bg-primary border-primary shadow-lg shadow-primary/25" 
-                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
-              }`}>
-                <step.icon className={`w-7 h-7 transition-all duration-300 ${
-                  isActive || isCurrent ? "text-white" : "text-slate-400"
-                }`} />
-              </div>
-              
-              {/* Step Label */}
-              <div className="mt-4 text-center">
-                <span className={`block text-sm font-bold uppercase tracking-wider transition-all duration-300 ${
-                  isActive || isCurrent ? "text-primary" : "text-slate-400"
+              <div className={`relative size-12 rounded-full flex items-center justify-center transition-all duration-300 border ${isActive || isCurrent
+                ? "bg-black border-black text-white dark:bg-white dark:border-white dark:text-black"
+                : "bg-white border-gray-200 text-gray-400 dark:bg-black dark:border-gray-800 dark:text-gray-600"
                 }`}>
+                <Icon 
+                  name={step.icon} 
+                  className="w-5 h-5" 
+                />
+              </div>
+
+              {/* Step Label */}
+              <div className="mt-3 text-center">
+                <span className={`block text-xs font-medium uppercase tracking-widest transition-all duration-300 ${isActive || isCurrent ? "text-black dark:text-white" : "text-gray-400 dark:text-gray-600"
+                  }`}>
                   {step.name}
                 </span>
               </div>
@@ -52,20 +98,20 @@ function StepIndicator({ steps, currentStep }: { steps: any[], currentStep: numb
   );
 }
 
-function FormField({ 
-  label, 
-  name, 
-  placeholder, 
-  type = "text", 
-  icon, 
-  value, 
+function FormField({
+  label,
+  name,
+  placeholder,
+  type = "text",
+  icon = "",
+  value,
   onChange,
   required = false,
   className = ""
-}: any) {
+}: FormFieldProps) {
   return (
     <div className={`group ${className}`}>
-      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+      <label className="block text-sm font-medium text-black dark:text-white mb-2">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div className="relative">
@@ -76,11 +122,11 @@ function FormField({
           onChange={onChange}
           placeholder={placeholder}
           required={required}
-          className="w-full px-6 py-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-4 focus:ring-primary/10 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-600"
+          className="w-full px-4 py-3 bg-transparent rounded-lg border border-gray-200 dark:border-gray-800 focus:border-black dark:focus:border-white focus:ring-0 text-black dark:text-white placeholder-gray-400 transition-all duration-200"
         />
         {icon && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors duration-300">
-            {icon}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+            <Icon name={icon} className="w-4 h-4" />
           </div>
         )}
       </div>
@@ -88,26 +134,20 @@ function FormField({
   );
 }
 
-function StepCard({ title, icon, children, isActive = false }: any) {
+function StepCard({ title, icon = '', children, isActive = false }: StepCardProps) {
   return (
-    <div className={`bg-white dark:bg-slate-900 rounded-3xl border transition-all duration-500 shadow-lg ${
-      isActive ? "border-primary/30 shadow-primary/10" : "border-slate-200 dark:border-slate-800"
-    }`}>
+    <div className="bg-white dark:bg-black animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
-      <div className="p-8 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-4">
-          <div className="bg-primary p-4 rounded-2xl shadow-lg shadow-primary/25">
-            {React.cloneElement(icon, { className: "w-8 h-8 text-white" })}
-          </div>
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white">{title}</h2>
-            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Fill in the required information</p>
-          </div>
-        </div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-black dark:text-white tracking-tight flex items-center gap-3">
+          {icon && <Icon name={icon} className="w-6 h-6" />}
+          {title}
+        </h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 ml-9">Please provide the requested information below.</p>
       </div>
-      
+
       {/* Content */}
-      <div className="p-8">
+      <div>
         {children}
       </div>
     </div>
@@ -116,7 +156,7 @@ function StepCard({ title, icon, children, isActive = false }: any) {
 
 export default function ConfigurationPage() {
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     // Step 1: Parties
     landlordName: "",
     tenantName: "",
@@ -147,37 +187,62 @@ export default function ConfigurationPage() {
     setFormData((prev) => ({ ...prev, [name]: val }));
   };
 
-  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 4));
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return Boolean(formData.landlordName && formData.tenantName && formData.landlordEmail && formData.tenantEmail);
+      case 2:
+        return Boolean(formData.streetAddress && formData.city && formData.state && formData.zip);
+      case 3:
+        return Boolean(formData.startDate && formData.endDate && formData.monthlyRent && formData.securityDeposit);
+      default:
+        return true;
+    }
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
+    } else {
+      showToast("Please fill in all required fields before proceeding.", "error")
+    }
+  };
+  
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
-  const steps = [
-    { id: 1, name: "Parties", icon: Users },
-    { id: 2, name: "Property", icon: Home },
-    { id: 3, name: "Terms", icon: Calendar },
-    { id: 4, name: "Provisions", icon: ClipboardCheck },
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateStep(currentStep)) {
+      console.log("Form Submitted", formData);
+      alert("Agreement Generated! (Check console for data)");
+    } else {
+      alert("Please fill in all required fields.");
+    }
+  };
+
+  const steps: Step[] = [
+    { id: 1, name: "Parties", icon: 'users' },
+    { id: 2, name: "Property", icon: 'home' },
+    { id: 3, name: "Terms", icon: 'calendar' },
+    { id: 4, name: "Provisions", icon: 'clipboardcheck' },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white">
+      <div className="max-w-4xl mx-auto px-6 py-16">
         {/* Header Section */}
-        <div className="text-center mb-12 animate-in">
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-primary/10 border border-primary/20 rounded-full mb-6">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <span className="text-primary text-sm font-semibold uppercase tracking-wider">
+        <div className="mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1 border border-black dark:border-white rounded-full mb-6">
+            <span className="text-xs font-bold uppercase tracking-widest">
               Lease Generator
             </span>
           </div>
-          
-          <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-slate-900 dark:text-white leading-tight mb-4">
-            Agreement{" "}
-            <span className="text-primary">
-              Configuration
-            </span>
+
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+            Agreement Configuration
           </h1>
-          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Complete all four steps to generate your legally binding lease agreement. 
-            Our intelligent system ensures compliance with your local regulations.
+          <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl leading-relaxed">
+            Complete the steps below to generate your lease agreement.
           </p>
         </div>
 
@@ -185,48 +250,48 @@ export default function ConfigurationPage() {
         <StepIndicator steps={steps} currentStep={currentStep} />
 
         {/* Form Container */}
-        <div className="animate-in" style={{ animationDelay: '400ms' }}>
+        <form onSubmit={handleSubmit} className="animate-in fade-in duration-700">
           {/* STEP 1: THE PARTIES */}
           {currentStep === 1 && (
             <StepCard
               title="The Parties"
-              icon={<Users />}
+              icon='users'
               isActive={true}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <FormField 
-                  label="Landlord Full Name" 
-                  name="landlordName" 
-                  placeholder="e.g., John Michael Smith" 
-                  value={formData.landlordName} 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  label="Landlord Full Name"
+                  name="landlordName"
+                  placeholder="e.g., John Michael Smith"
+                  value={formData.landlordName}
                   onChange={handleChange}
                   required={true}
                 />
-                <FormField 
-                  label="Tenant Full Name" 
-                  name="tenantName" 
-                  placeholder="e.g., Jane Elizabeth Doe" 
-                  value={formData.tenantName} 
+                <FormField
+                  label="Tenant Full Name"
+                  name="tenantName"
+                  placeholder="e.g., Jane Elizabeth Doe"
+                  value={formData.tenantName}
                   onChange={handleChange}
                   required={true}
                 />
-                <FormField 
-                  label="Landlord Email Address" 
-                  name="landlordEmail" 
-                  type="email" 
+                <FormField
+                  label="Landlord Email Address"
+                  name="landlordEmail"
+                  type="email"
                   placeholder="landlord@example.com"
-                  icon={<Mail size={20}/>} 
-                  value={formData.landlordEmail} 
+                  icon={'mail'}
+                  value={formData.landlordEmail}
                   onChange={handleChange}
                   required={true}
                 />
-                <FormField 
-                  label="Tenant Email Address" 
-                  name="tenantEmail" 
-                  type="email" 
+                <FormField
+                  label="Tenant Email Address"
+                  name="tenantEmail"
+                  type="email"
                   placeholder="tenant@example.com"
-                  icon={<Mail size={20}/>} 
-                  value={formData.tenantEmail} 
+                  icon={'mail'}
+                  value={formData.tenantEmail}
                   onChange={handleChange}
                   required={true}
                 />
@@ -238,51 +303,51 @@ export default function ConfigurationPage() {
           {currentStep === 2 && (
             <StepCard
               title="Property Details"
-              icon={<Home />}
+              icon='home'
               isActive={true}
             >
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField 
-                    label="Street Address" 
-                    name="streetAddress" 
+                  <FormField
+                    label="Street Address"
+                    name="streetAddress"
                     placeholder="123 Main Street"
-                    icon={<MapPin size={20}/>} 
-                    value={formData.streetAddress} 
+                    icon={'map-pin'}
+                    value={formData.streetAddress}
                     onChange={handleChange}
                     className="md:col-span-2"
                     required={true}
                   />
-                  <FormField 
-                    label="Unit / Apt #" 
-                    name="unit" 
+                  <FormField
+                    label="Unit / Apt #"
+                    name="unit"
                     placeholder="Unit 4B"
-                    value={formData.unit} 
+                    value={formData.unit}
                     onChange={handleChange}
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField 
-                    label="City" 
-                    name="city" 
+                  <FormField
+                    label="City"
+                    name="city"
                     placeholder="San Francisco"
-                    value={formData.city} 
+                    value={formData.city}
                     onChange={handleChange}
                     required={true}
                   />
-                  <FormField 
-                    label="State" 
-                    name="state" 
+                  <FormField
+                    label="State"
+                    name="state"
                     placeholder="CA"
-                    value={formData.state} 
+                    value={formData.state}
                     onChange={handleChange}
                     required={true}
                   />
-                  <FormField 
-                    label="ZIP Code" 
-                    name="zip" 
+                  <FormField
+                    label="ZIP Code"
+                    name="zip"
                     placeholder="94105"
-                    value={formData.zip} 
+                    value={formData.zip}
                     onChange={handleChange}
                     required={true}
                   />
@@ -295,43 +360,43 @@ export default function ConfigurationPage() {
           {currentStep === 3 && (
             <StepCard
               title="Lease Terms & Financial Details"
-              icon={<Calendar />}
+              icon='calendar'
               isActive={true}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <FormField 
-                  label="Lease Start Date" 
-                  name="startDate" 
-                  type="date" 
-                  value={formData.startDate} 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  label="Lease Start Date"
+                  name="startDate"
+                  type="date"
+                  value={formData.startDate}
                   onChange={handleChange}
                   required={true}
                 />
-                <FormField 
-                  label="Lease End Date" 
-                  name="endDate" 
-                  type="date" 
-                  value={formData.endDate} 
+                <FormField
+                  label="Lease End Date"
+                  name="endDate"
+                  type="date"
+                  value={formData.endDate}
                   onChange={handleChange}
                   required={true}
                 />
-                <FormField 
-                  label="Monthly Rent Amount" 
-                  name="monthlyRent" 
-                  type="number" 
+                <FormField
+                  label="Monthly Rent Amount"
+                  name="monthlyRent"
+                  type="number"
                   placeholder="2500"
-                  icon={<DollarSign size={20}/>} 
-                  value={formData.monthlyRent} 
+                  icon={'dollar-sign'}
+                  value={formData.monthlyRent}
                   onChange={handleChange}
                   required={true}
                 />
-                <FormField 
-                  label="Security Deposit" 
-                  name="securityDeposit" 
-                  type="number" 
+                <FormField
+                  label="Security Deposit"
+                  name="securityDeposit"
+                  type="number"
                   placeholder="5000"
-                  icon={<DollarSign size={20}/>} 
-                  value={formData.securityDeposit} 
+                  icon={'dollar-sign'}
+                  value={formData.securityDeposit}
                   onChange={handleChange}
                   required={true}
                 />
@@ -343,50 +408,50 @@ export default function ConfigurationPage() {
           {currentStep === 4 && (
             <StepCard
               title="Additional Provisions & Policies"
-              icon={<ClipboardCheck />}
+              icon='clipboardcheck'
               isActive={true}
             >
               <div className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Smoking Policy */}
                   <div className="group">
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                      <Cigarette className="inline w-4 h-4 mr-2" />
+                    <label className="block text-sm font-medium text-black dark:text-white mb-2">
+                      <Icon name='cigarette' className="inline w-4 h-4 mr-2" />
                       Smoking Policy
                     </label>
                     <div className="relative">
-                      <select 
+                      <select
                         name="smokingPolicy"
                         value={formData.smokingPolicy}
                         onChange={handleChange}
-                        className="w-full px-6 py-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-4 focus:ring-primary/10 text-slate-900 dark:text-white appearance-none transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-600"
+                        className="w-full px-4 py-3 bg-transparent rounded-lg border border-gray-200 dark:border-gray-800 focus:border-black dark:focus:border-white focus:ring-0 text-black dark:text-white appearance-none transition-all duration-200"
                       >
-                        <option value="No Smoking" className="bg-white dark:bg-slate-900">No Smoking Allowed</option>
-                        <option value="Smoking Outside Only" className="bg-white dark:bg-slate-900">Smoking Outside Only</option>
-                        <option value="Smoking Allowed" className="bg-white dark:bg-slate-900">Smoking Allowed</option>
+                        <option value="No Smoking" className="bg-white dark:bg-black">No Smoking Allowed</option>
+                        <option value="Smoking Outside Only" className="bg-white dark:bg-black">Smoking Outside Only</option>
+                        <option value="Smoking Allowed" className="bg-white dark:bg-black">Smoking Allowed</option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <ChevronRight className="w-5 h-5 text-slate-400 rotate-90" />
+                        <Icon name='chevron-right' className="w-4 h-4 text-gray-400 rotate-90" />
                       </div>
                     </div>
                   </div>
 
                   {/* Pets Toggle */}
                   <div className="group">
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-6">
-                      <PawPrint className="inline w-4 h-4 mr-2" />
+                    <label className="block text-sm font-medium text-black dark:text-white mb-4">
+                      <Icon name="paw-print" className="inline w-4 h-4 mr-2" />
                       Pet Policy
                     </label>
                     <label className="relative inline-flex items-center cursor-pointer group">
-                      <input 
-                        type="checkbox" 
-                        name="petsAllowed" 
-                        checked={formData.petsAllowed} 
-                        onChange={handleChange} 
-                        className="sr-only peer" 
+                      <input
+                        type="checkbox"
+                        name="petsAllowed"
+                        checked={formData.petsAllowed}
+                        onChange={handleChange}
+                        className="sr-only peer"
                       />
-                      <div className="relative w-14 h-7 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:start-[3px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary border border-slate-300 dark:border-slate-600 peer-checked:border-primary"></div>
-                      <span className="ms-4 text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors duration-300">
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-black dark:peer-checked:bg-white dark:peer-checked:after:bg-black dark:peer-checked:after:border-black"></div>
+                      <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
                         Pets Allowed
                       </span>
                     </label>
@@ -395,76 +460,62 @@ export default function ConfigurationPage() {
 
                 {/* Additional Notes */}
                 <div className="group">
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                    <FileText className="inline w-4 h-4 mr-2" />
+                  <label className="block text-sm font-medium text-black dark:text-white mb-2">
+                    <Icon name="file-text" className="inline w-4 h-4 mr-2" />
                     Additional Clauses & Special Conditions
                   </label>
                   <div className="relative">
-                    <textarea 
+                    <textarea
                       name="additionalNotes"
                       value={formData.additionalNotes}
                       onChange={handleChange}
                       rows={5}
-                      placeholder="Enter any special conditions, house rules, or additional clauses (e.g., lawn maintenance responsibilities, quiet hours, parking arrangements, utility inclusions...)"
-                      className="w-full px-6 py-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-4 focus:ring-primary/10 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 resize-none transition-all duration-300 hover:border-slate-300 dark:hover:border-slate-600"
+                      placeholder="Enter any special conditions, house rules, or additional clauses..."
+                      className="w-full px-4 py-3 bg-transparent rounded-lg border border-gray-200 dark:border-gray-800 focus:border-black dark:focus:border-white focus:ring-0 text-black dark:text-white placeholder-gray-400 resize-none transition-all duration-200"
                     />
                   </div>
                 </div>
               </div>
             </StepCard>
           )}
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between items-center mt-12 animate-in" style={{ animationDelay: '600ms' }}>
-          <button
-            type="button"
-            onClick={prevStep}
-            disabled={currentStep === 1}
-            className={`group flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold transition-all duration-300 ${
-              currentStep === 1 
-                ? "text-slate-300 cursor-not-allowed" 
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg"
-            }`}
-          >
-            <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
-            Previous Step
-          </button>
-
-          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-medium">
-            <span>Step {currentStep} of {steps.length}</span>
-            <div className="flex gap-1">
-              {steps.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index + 1 <= currentStep ? "bg-primary" : "bg-slate-200 dark:bg-slate-700"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {currentStep < 4 ? (
+        
+          {/* Navigation */}
+          <div className="flex justify-between items-center mt-12 pt-8 border-t border-gray-100 dark:border-gray-900">
             <button
               type="button"
-              onClick={nextStep}
-              className="group inline-flex items-center justify-center px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/25 hover:bg-primary-hover hover:scale-105 transition-all duration-300"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className={`group flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${currentStep === 1
+                ? "text-gray-300 cursor-not-allowed"
+                : "text-black dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900"
+                }`}
             >
-              Continue
-              <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+              <Icon name="chevron-left" className="w-4 h-4 group-hover:-translate-x-1 transition-transform duration-200" />
+              Back
             </button>
-          ) : (
-            <button
-              type="submit"
-              className="group inline-flex items-center justify-center px-8 py-4 bg-green-600 text-white font-bold rounded-2xl shadow-lg shadow-green-500/25 hover:bg-green-700 hover:scale-105 transition-all duration-300"
-            >
-              <Sparkles className="w-5 h-5 mr-2" />
-              Generate Agreement
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-            </button>
-          )}
-        </div>
+
+
+            {currentStep < 4 ? (
+              <button
+                type="button"
+                onClick={nextStep}
+                className="group inline-flex items-center justify-center px-8 py-3 bg-black dark:bg-white text-white dark:text-black font-medium rounded-lg hover:opacity-90 transition-all duration-200"
+              >
+                Continue
+                <Icon name="chevron-right" className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="group inline-flex items-center justify-center px-8 py-3 bg-black dark:bg-white text-white dark:text-black font-medium rounded-lg hover:opacity-90 transition-all duration-200"
+              >
+                <Icon name="sparkles" className="w-4 h-4 mr-2" />
+                Generate Agreement
+                <Icon name="arrow-right" className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200" />
+              </button>
+            )}
+          </div>
+        </form>
       </div>
     </div>
   );
