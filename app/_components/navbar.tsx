@@ -7,7 +7,7 @@ import  Icon  from "@/app/_components/icon";
 import { useAuth } from "@/app/hooks/auth-context";
 
 const NAV_ITEMS = [
-  { name: "Dashboard", href: "/dashboard", icon: "layout-dashboard" },
+  { name: "Dashboard", href: "/dashboard", icon: "gauge" },
   { name: "Templates", href: "/templates", icon: "layers" },
   { name: "Documents", href: "/documents", icon: "file-text" },
   { name: "Settings", href: "/settings", icon: "settings" },

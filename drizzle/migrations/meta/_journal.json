@@ -15,6 +15,13 @@
       "when": 1769117372697,
       "tag": "0001_plain_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769652599446,
+      "tag": "0002_deep_leader",
+      "breakpoints": true
     }
   ]
 }
