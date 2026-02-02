@@ -288,7 +288,7 @@ export default async function DashboardPage() {
                       <td className="hidden sm:table-cell px-6 py-4 text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-2">
                           <Icon name="map-pin" className="w-4 h-4" />
-                          {lease.address}
+                          {lease?.streetAddress}
                         </div>
                       </td>
                       <td className="hidden md:table-cell px-6 py-4 text-gray-600 dark:text-gray-400">

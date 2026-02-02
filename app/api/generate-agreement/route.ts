@@ -1,232 +1,533 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { uploadPdfToCloudinary } from '@/app/cloudinary';
-import { insertLease, updateLeasePdfUrl } from '@/app/lib/db';
+// app/api/generate-agreement/route.ts
 
-// --- Interfaces ---
-interface LeaseData {
-    profileId: string;
-    landlordName: string;
-    tenantName: string;
-    landlordEmail: string;
-    tenantEmail: string;
-    streetAddress: string;
-    unit: string;
-    city: string;
-    state: string;
-    zip: string;
-    startDate: string;
-    endDate: string;
-    monthlyRent: string;
-    securityDeposit: string;
-    petsAllowed: boolean;
-    smokingPolicy: string;
-    additionalNotes: string;
-}
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/app/lib/db";
+import { leases } from "@/drizzle/schema";
+// @ts-ignore
+import PDFDocument from "pdfkit/js/pdfkit.standalone";
+import { v2 as cloudinary } from "cloudinary";
 
-interface ValidationError {
-    field: string;
-    message: string;
-}
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
 
-interface APIError extends Error {
-    status?: number;
-    code?: string;
-}
+    const {
+      profileId,
+      landlordName,
+      tenantName,
+      landlordEmail,
+      tenantEmail,
+      streetAddress,
+      unit,
+      city,
+      state,
+      zip,
+      startDate,
+      endDate,
+      monthlyRent,
+      securityDeposit,
+      petsAllowed,
+      smokingPolicy,
+      additionalNotes,
+      templateId,
+    } = body;
 
-// --- Main API Handler ---
-export async function POST(req: NextRequest) {
-    let leaseId = null;
+    // Validate required fields
+    if (
+      !profileId ||
+      !landlordName ||
+      !tenantName ||
+      !landlordEmail ||
+      !tenantEmail ||
+      !streetAddress ||
+      !city ||
+      !state ||
+      !zip ||
+      !startDate ||
+      !endDate ||
+      !monthlyRent ||
+      !securityDeposit ||
+      !templateId
+    ) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 },
+      );
+    }
+
+    console.log("Starting lease generation...");
+
+    // Step 1: Generate AI content for the lease
+    let aiContent: string;
+    try {
+      aiContent = await generateLeaseContent({
+        landlordName,
+        tenantName,
+        streetAddress,
+        unit,
+        city,
+        state,
+        zip,
+        startDate,
+        endDate,
+        monthlyRent,
+        securityDeposit,
+        petsAllowed,
+        smokingPolicy,
+        additionalNotes,
+        templateId,
+      });
+      console.log("AI content generated successfully");
+    } catch (aiError: any) {
+      console.error("AI generation failed:", aiError);
+      // Use fallback template if AI fails
+      aiContent = generateFallbackLease({
+        landlordName,
+        tenantName,
+        streetAddress,
+        unit,
+        city,
+        state,
+        zip,
+        startDate,
+        endDate,
+        monthlyRent,
+        securityDeposit,
+        petsAllowed,
+        smokingPolicy,
+        additionalNotes,
+      });
+      console.log("Using fallback template");
+    }
+
+    // Step 2: Generate PDF from AI content
+    let pdfUrl: string;
+    let cloudinaryPublicId: string;
 
     try {
-        console.log('Starting lease generation process...');
-        const leaseData: LeaseData = await req.json();
-        const profileId = leaseData.profileId;
-
-        if (!profileId) {
-            return NextResponse.json({ success: false, error: 'User Profile ID is missing.' }, { status: 401 });
-        }
-
-        // 1. Validation
-        const validationErrors = validateLeaseData(leaseData);
-        if (validationErrors.length > 0) {
-            return NextResponse.json({ success: false, error: 'Validation failed', validationErrors }, { status: 400 });
-        }
-
-        // 2. Initial Database Insert (Atomic ID generation)
-        console.log('Inserting initial lease record...');
-        leaseId = await insertLease({
-            // profileId,
-            ...leaseData,
-            monthlyRent: parseFloat(leaseData.monthlyRent),
-            securityDeposit: parseFloat(leaseData.securityDeposit),
-        });
-
-        // 3. AI Content Generation (Groq)
-        console.log('Generating legal text via AI...');
-        const agreementText = await generateLeaseWithAI(leaseData);
-
-        // 4. Generate PDF Document
-        console.log('Rendering PDF bytes...');
-        const pdfBytes = await generatePDF(agreementText, leaseData);
-
-        // 5. Upload to Cloudinary
-        console.log('Uploading to Cloudinary...');
-        const fileName = `lease_${leaseId}_${Date.now()}`;
-        const uploadResult = await uploadPdfToCloudinary(Buffer.from(pdfBytes), fileName);
-        
-        const cloudinaryUrl = uploadResult.url;
-        const publicId = uploadResult.publicId;
-
-        // 6. Final Database Update (Save the URLs)
-        console.log('Updating lease record with Cloudinary URLs...');
-        await updateLeasePdfUrl(profileId, leaseId, cloudinaryUrl, publicId);
-
-        // 7. Base64 for instant preview in UI
-        const pdfBase64 = Buffer.from(pdfBytes).toString('base64');
-        const pdfDataUrl = `data:application/pdf;base64,${pdfBase64}`;
-
-        return NextResponse.json({
-            success: true,
-            leaseId,
-            pdfUrl: cloudinaryUrl,
-            pdfDataUrl,
-            message: 'Lease generated and stored successfully.'
-        });
-
-    } catch (error) {
-        console.error('Workflow Error:', error);
-        const apiError = error as APIError;
-        return NextResponse.json({
-            success: false,
-            error: apiError.message || 'Internal Server Error',
-            details: error instanceof Error ? error.message : String(error),
-            leaseId: leaseId || undefined
-        }, { status: apiError.status || 500 });
+      const pdfResult = await generatePDF(aiContent, {
+        landlordName,
+        tenantName,
+        streetAddress,
+        city,
+        state,
+      });
+      pdfUrl = pdfResult.pdfUrl;
+      cloudinaryPublicId = pdfResult.cloudinaryPublicId;
+      console.log("PDF generated and uploaded successfully");
+    } catch (pdfError: any) {
+      console.error("PDF generation failed:", pdfError);
+      return NextResponse.json(
+        {
+          error: "Failed to generate PDF",
+          details: pdfError.message,
+        },
+        { status: 500 },
+      );
     }
+
+    // Step 3: Insert into database using Drizzle ORM
+    try {
+      const [newLease] = await db
+        .insert(leases)
+        .values({
+          profileId,
+          landlordName,
+          landlordEmail,
+          tenantName,
+          tenantEmail,
+          streetAddress,
+          unit: unit || null,
+          city,
+          state,
+          zip,
+          templateType: templateId,
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+          monthlyRent: monthlyRent.toString(),
+          securityDeposit: securityDeposit.toString(),
+          petsAllowed: petsAllowed || false,
+          smokingPolicy,
+          additionalNotes: additionalNotes || null,
+          aiGeneratedContent: aiContent,
+          pdfUrl,
+          cloudinaryPublicId,
+          status: "draft",
+        })
+        .returning();
+
+      console.log("Lease saved to database successfully");
+
+      return NextResponse.json({
+        success: true,
+        pdfUrl,
+        leaseId: newLease.id,
+        aiContent,
+      });
+    } catch (dbError: any) {
+      console.error("Database error:", dbError);
+      return NextResponse.json(
+        {
+          error: "Failed to save lease to database",
+          details: dbError.message,
+        },
+        { status: 500 },
+      );
+    }
+  } catch (error: any) {
+    console.error("Error generating agreement:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to generate agreement",
+        details: error.message,
+      },
+      { status: 500 },
+    );
+  }
 }
 
-// --- AI Generation Logic ---
-async function generateLeaseWithAI(data: LeaseData): Promise<string> {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error('GROQ_API_KEY is not configured');
+// Helper function to generate lease content using AI
+async function generateLeaseContent(data: any): Promise<string> {
+  const {
+    landlordName,
+    tenantName,
+    streetAddress,
+    unit,
+    city,
+    state,
+    zip,
+    startDate,
+    endDate,
+    monthlyRent,
+    securityDeposit,
+    petsAllowed,
+    smokingPolicy,
+    additionalNotes,
+    templateId,
+  } = data;
 
-    const prompt = `Generate a formal Residential Lease Agreement for the state of ${data.state}.
-    LANDLORD: ${data.landlordName}
-    TENANT: ${data.tenantName}
-    PROPERTY: ${data.streetAddress}, ${data.unit ? 'Unit '+data.unit+',' : ''} ${data.city}, ${data.state} ${data.zip}
-    TERM: ${data.startDate} to ${data.endDate}
-    RENT: $${data.monthlyRent} per month
-    DEPOSIT: $${data.securityDeposit}
-    PETS: ${data.petsAllowed ? 'Allowed' : 'Not Allowed'}
-    SMOKING: ${data.smokingPolicy}
-    ADDITIONAL TERMS: ${data.additionalNotes || 'None'}
-    
-    Format with clear numeric sections (e.g., 1. LEASE TERM, 2. RENT). Use professional legal language.`;
+  const fullAddress = unit
+    ? `${streetAddress}, Unit ${unit}, ${city}, ${state} ${zip}`
+    : `${streetAddress}, ${city}, ${state} ${zip}`;
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
+  const templateNames: Record<string, string> = {
+    standard: "Standard Residential",
+    "short-term": "Short-Term Rental",
+    commercial: "Commercial",
+  };
+
+  const templateName = templateNames[templateId] || "Standard Residential";
+
+  const prompt = `Generate a comprehensive and legally sound ${templateName} lease agreement with the following details:
+
+PROPERTY INFORMATION:
+- Address: ${fullAddress}
+
+PARTIES:
+- Landlord: ${landlordName}
+- Tenant: ${tenantName}
+
+LEASE TERMS:
+- Start Date: ${new Date(startDate).toLocaleDateString()}
+- End Date: ${new Date(endDate).toLocaleDateString()}
+- Monthly Rent: $${parseFloat(monthlyRent).toLocaleString()}
+- Security Deposit: $${parseFloat(securityDeposit).toLocaleString()}
+
+POLICIES:
+- Pets: ${petsAllowed ? "Allowed" : "Not Allowed"}
+- Smoking: ${smokingPolicy}
+
+${additionalNotes ? `ADDITIONAL PROVISIONS:\n${additionalNotes}` : ""}
+
+Please generate a complete, professional lease agreement that includes all standard clauses. Format with clear sections and numbering.`;
+
+  // Check if API key is configured
+  if (!process.env.GROQ_API_KEY) {
+    console.warn("ANTHROPIC_API_KEY not configured, using fallback template");
+    throw new Error("AI API not configured");
+  }
+
+  const api_key = process.env.GROQ_API_KEY;
+
+  try {
+    console.log("Calling Anthropic API...");
+
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${api_key}`,
         },
         body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-                { role: 'system', content: 'You are a legal document generator.' },
-                { role: 'user', content: prompt }
-            ],
-            temperature: 0.3 // Lower temperature for more consistent legal formatting
-        })
-    });
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: "You are a legal document generator." },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.3, // Lower temperature for more consistent legal formatting
+        }),
+      },
+    );
 
-    if (!response.ok) throw new Error(`Groq API failed: ${response.statusText}`);
-    const result = await response.json();
-    return result.choices[0].message.content;
-}
-
-// --- PDF Creation Logic ---
-async function generatePDF(agreementText: string, data: LeaseData): Promise<Uint8Array> {
-    const pdfDoc = await PDFDocument.create();
-    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-    let page = pdfDoc.addPage([612, 792]);
-    const { width, height } = page.getSize();
-    const margin = 50;
-    const maxWidth = width - (margin * 2);
-    let y = height - margin;
-
-    const addNewPage = () => {
-        page = pdfDoc.addPage([612, 792]);
-        y = height - margin;
-    };
-
-    // Text Wrap & Draw Helper
-    const drawParagraph = (text: string, size: number, font: any, lineHeight: number) => {
-        const cleanText = text.replace(/[^\x20-\x7E]/g, '').trim();
-        const words = cleanText.split(' ');
-        let line = '';
-
-        for (const word of words) {
-            const testLine = line + word + ' ';
-            const testWidth = font.widthOfTextAtSize(testLine, size);
-
-            if (testWidth > maxWidth) {
-                page.drawText(line.trim(), { x: margin, y, size, font });
-                y -= lineHeight;
-                line = word + ' ';
-                if (y < margin + 40) addNewPage();
-            } else {
-                line = testLine;
-            }
-        }
-        page.drawText(line.trim(), { x: margin, y, size, font });
-        y -= lineHeight;
-    };
-
-    // Header
-    page.drawText('RESIDENTIAL LEASE AGREEMENT', {
-        x: (width - boldFont.widthOfTextAtSize('RESIDENTIAL LEASE AGREEMENT', 16)) / 2,
-        y, size: 16, font: boldFont
-    });
-    y -= 40;
-
-    // Content Processing
-    const sections = agreementText.split('\n');
-    for (const line of sections) {
-        if (!line.trim()) {
-            y -= 10;
-            continue;
-        }
-        const isHeading = /^\d+\.|^[A-Z\s]+:/.test(line);
-        drawParagraph(line, isHeading ? 11 : 10, isHeading ? boldFont : regularFont, 14);
-        if (y < margin) addNewPage();
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Anthropic API error response:", errorText);
+      throw new Error(`AI API error: ${response.status} - ${errorText}`);
     }
 
-    // Signature Block
-    y -= 50;
-    if (y < 150) addNewPage();
-    
-    page.drawText('__________________________', { x: margin, y, size: 12 });
-    page.drawText('__________________________', { x: width / 2 + 20, y, size: 12 });
-    y -= 15;
-    page.drawText(`Landlord: ${data.landlordName}`, { x: margin, y, size: 10, font: regularFont });
-    page.drawText(`Tenant: ${data.tenantName}`, { x: width / 2 + 20, y, size: 10, font: regularFont });
+    const result = await response.json();
 
-    return await pdfDoc.save();
+    console.log(result);
+
+    if (
+      !result.choices ||
+      !result.choices[0] ||
+      !result.choices[0].message ||
+      !result.choices[0].message.content
+    ) {
+      console.error("Invalid AI response format:", result);
+      throw new Error("Invalid response format from AI");
+    }
+
+    return result.choices[0].message.content;
+  } catch (error: any) {
+    console.error("Error generating AI content:", error);
+    throw error;
+  }
 }
 
-// --- Validation Logic ---
-function validateLeaseData(data: LeaseData): ValidationError[] {
-    const errors: ValidationError[] = [];
-    const required = ['landlordName', 'tenantName', 'landlordEmail', 'tenantEmail', 'streetAddress', 'city', 'state', 'zip', 'startDate', 'endDate', 'monthlyRent'];
-    
-    required.forEach(field => {
-        if (!data[field as keyof LeaseData]) {
-            errors.push({ field, message: `${field} is required` });
-        }
+// Fallback lease template if AI generation fails
+function generateFallbackLease(data: any): string {
+  const {
+    landlordName,
+    tenantName,
+    streetAddress,
+    unit,
+    city,
+    state,
+    zip,
+    startDate,
+    endDate,
+    monthlyRent,
+    securityDeposit,
+    petsAllowed,
+    smokingPolicy,
+    additionalNotes,
+  } = data;
+
+  const fullAddress = unit
+    ? `${streetAddress}, Unit ${unit}, ${city}, ${state} ${zip}`
+    : `${streetAddress}, ${city}, ${state} ${zip}`;
+
+  return `RESIDENTIAL LEASE AGREEMENT
+
+This Lease Agreement ("Agreement") is entered into on ${new Date().toLocaleDateString()} between:
+
+LANDLORD: ${landlordName}
+TENANT: ${tenantName}
+
+1. PROPERTY
+The Landlord agrees to lease to the Tenant the residential property located at:
+${fullAddress}
+(the "Property")
+
+2. TERM
+The lease term shall begin on ${new Date(startDate).toLocaleDateString()} and end on ${new Date(endDate).toLocaleDateString()}.
+
+3. RENT
+The Tenant agrees to pay monthly rent of $${parseFloat(monthlyRent).toLocaleString()}, due on the first day of each month.
+
+4. SECURITY DEPOSIT
+The Tenant shall pay a security deposit of $${parseFloat(securityDeposit).toLocaleString()}, which will be held by the Landlord and returned at the end of the lease term, subject to deductions for damages beyond normal wear and tear.
+
+5. UTILITIES
+The Tenant shall be responsible for all utilities and services, unless otherwise specified in writing.
+
+6. MAINTENANCE AND REPAIRS
+The Tenant agrees to maintain the Property in good condition and promptly notify the Landlord of any necessary repairs.
+
+7. PETS
+${petsAllowed ? "Pets are allowed on the Property with prior written consent from the Landlord." : "No pets are allowed on the Property without prior written consent from the Landlord."}
+
+8. SMOKING POLICY
+${smokingPolicy}
+
+9. USE OF PROPERTY
+The Property shall be used exclusively as a private residence for the Tenant and their immediate family.
+
+10. ENTRY AND INSPECTION
+The Landlord may enter the Property with 24 hours notice for inspection, repairs, or to show the Property to prospective tenants or buyers.
+
+11. TERMINATION
+Either party may terminate this Agreement with 30 days written notice, subject to all terms and conditions herein.
+
+12. DEFAULT
+Failure to pay rent when due or violation of any terms of this Agreement constitutes default and may result in eviction proceedings.
+
+${additionalNotes ? `13. ADDITIONAL PROVISIONS\n${additionalNotes}` : ""}
+
+This Agreement represents the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements.
+
+By signing below, both parties acknowledge they have read, understood, and agree to all terms of this Lease Agreement.`;
+}
+
+// Helper function to generate PDF and upload to Cloudinary
+async function generatePDF(
+  content: string,
+  metadata: {
+    landlordName: string;
+    tenantName: string;
+    streetAddress: string;
+    city: string;
+    state: string;
+  },
+): Promise<{
+  pdfUrl: string;
+  cloudinaryPublicId: string;
+}> {
+  try {
+    // Validate Cloudinary configuration
+    if (
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      !process.env.CLOUDINARY_API_KEY ||
+      !process.env.CLOUDINARY_API_SECRET
+    ) {
+      throw new Error("Cloudinary credentials not configured");
+    }
+
+    // Configure Cloudinary
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
     });
 
-    return errors;
+    console.log("Creating PDF document...");
+
+    // Create PDF document
+    const doc = new PDFDocument({
+      size: "LETTER",
+      margins: { top: 50, bottom: 50, left: 72, right: 72 },
+    });
+
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+
+    // Add header
+    doc
+      .fontSize(20)
+      .font("Helvetica-Bold")
+      .text("RESIDENTIAL LEASE AGREEMENT", { align: "center" });
+
+    doc.moveDown();
+
+    // Add property info
+    doc
+      .fontSize(12)
+      .font("Helvetica")
+      .text(
+        `Property: ${metadata.streetAddress}, ${metadata.city}, ${metadata.state}`,
+        {
+          align: "center",
+        },
+      );
+
+    doc.moveDown(2);
+
+    // Add main content - handle line breaks properly
+    const lines = content.split("\n");
+    doc.fontSize(11).font("Helvetica");
+
+    for (const line of lines) {
+      if (line.trim()) {
+        // Check if adding this line will overflow the page
+        const textHeight = doc.heightOfString(line);
+        if (doc.y + textHeight > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+        }
+
+        doc.text(line, {
+          align: "left",
+          lineGap: 3,
+        });
+      } else {
+        doc.moveDown(0.5);
+      }
+    }
+
+    // Add signature section on new page
+    doc.addPage();
+    doc.fontSize(14).font("Helvetica-Bold").text("SIGNATURES", {
+      align: "center",
+    });
+
+    doc.moveDown(2);
+
+    // Landlord signature
+    doc.fontSize(11).font("Helvetica");
+    doc.text("LANDLORD:", { underline: true });
+    doc.moveDown(0.5);
+    doc.text(
+      "Signature: _________________________________   Date: ______________",
+    );
+    doc.moveDown(0.5);
+    doc.text(`Print Name: ${metadata.landlordName}`);
+
+    doc.moveDown(3);
+
+    // Tenant signature
+    doc.text("TENANT:", { underline: true });
+    doc.moveDown(0.5);
+    doc.text(
+      "Signature: _________________________________   Date: ______________",
+    );
+    doc.moveDown(0.5);
+    doc.text(`Print Name: ${metadata.tenantName}`);
+
+    doc.end();
+
+    console.log("PDF created, waiting for buffer...");
+
+    // Wait for PDF generation to complete
+    const pdfBuffer = await new Promise<Buffer>((resolve) => {
+      doc.on("end", () => {
+        resolve(Buffer.concat(chunks));
+      });
+    });
+
+    console.log("PDF buffer ready, uploading to Cloudinary...");
+
+    // Upload to Cloudinary
+    const uploadResult = await new Promise<any>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: "raw",
+          folder: "lease-agreements",
+          format: "pdf",
+          public_id: `lease_${Date.now()}_${metadata.tenantName.replace(/\s+/g, "_")}`,
+        },
+        (error: any, result: any) => {
+          if (error) {
+            console.error("Cloudinary upload error:", error);
+            reject(error);
+          } else {
+            console.log("Cloudinary upload successful");
+            resolve(result);
+          }
+        },
+      );
+
+      uploadStream.end(pdfBuffer);
+    });
+
+    return {
+      pdfUrl: uploadResult.secure_url,
+      cloudinaryPublicId: uploadResult.public_id,
+    };
+  } catch (error: any) {
+    console.error("Error generating PDF:", error);
+    throw new Error(`PDF generation failed: ${error.message}`);
+  }
 }

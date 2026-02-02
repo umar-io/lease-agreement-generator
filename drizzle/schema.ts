@@ -31,6 +31,9 @@ export const leases = pgTable("leases", {
   city: text("city").notNull(),
   state: text("state").notNull(),
   zip: text("zip").notNull(),
+
+  // template type
+  templateType: text("template_type").notNull(),
   
   // Lease terms
   startDate: timestamp("start_date").notNull(),
