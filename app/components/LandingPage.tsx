@@ -301,7 +301,7 @@ function Nav() {
         mixBlendMode: scrolled ? "normal" : "multiply",
       }}>
         <span style={{ fontFamily: "var(--font-display)", fontSize: "clamp(20px, 3vw, 30px)", letterSpacing: ".1em" }}>
-          LEASEFLOW
+          LEEZIGN
         </span>
 
         {/* Desktop */}
@@ -331,7 +331,7 @@ function Nav() {
             className="mobile-menu"
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 56 }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 26, letterSpacing: ".1em", color: "var(--paper)" }}>LEASEFLOW</span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 26, letterSpacing: ".1em", color: "var(--paper)" }}>LEEZIGN</span>
               <button onClick={() => setMenuOpen(false)}
                 style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
                 <X size={22} color="var(--paper)" />
@@ -358,7 +358,7 @@ function Nav() {
               ))}
             </div>
 
-            <p style={{ fontSize: 10, color: "rgba(245,240,232,.25)", letterSpacing: ".08em" }}>© 2024 LEASEFLOW</p>
+            <p style={{ fontSize: 10, color: "rgba(245,240,232,.25)", letterSpacing: ".08em" }}>© {new Date().getFullYear()} LEEZIGN</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -628,9 +628,9 @@ function Features() {
 // TESTIMONIALS
 // ─────────────────────────────────────────────
 const testimonials = [
-  { quote: "I used to spend 2 hours on every lease. Now it's 4 minutes. LeaseFlow paid for itself in the first week.", name: "Marcus T.", role: "Property Manager, Chicago", n: 14 },
+  { quote: "I used to spend 2 hours on every lease. Now it's 4 minutes. Leezign paid for itself in the first week.", name: "Marcus T.", role: "Property Manager, Chicago", n: 14 },
   { quote: "The state compliance feature alone is worth the subscription. I stopped paying $400/hr for a lawyer to review every contract.", name: "Priya S.", role: "Landlord, California", n: 3 },
-  { quote: "Our agency manages 220 units. LeaseFlow is the only software that actually reduced our admin overhead.", name: "Derek W.", role: "Operations Director, RE Group", n: 220 },
+  { quote: "Our agency manages 220 units. Leezign is the only software that actually reduced our admin overhead.", name: "Derek W.", role: "Operations Director, RE Group", n: 220 },
 ];
 
 function Testimonials() {
@@ -735,11 +735,11 @@ function Pricing() {
 // FAQ
 // ─────────────────────────────────────────────
 const faqs = [
-  { q: "Are the leases legally binding?", a: "Yes. All LeaseFlow leases are drafted to meet state-specific requirements and are fully enforceable. E-signatures comply with the ESIGN Act and UETA." },
+  { q: "Are the leases legally binding?", a: "Yes. All Leezign leases are drafted to meet state-specific requirements and are fully enforceable. E-signatures comply with the ESIGN Act and UETA." },
   { q: "Can I add custom clauses?", a: "Absolutely. The editor lets you add freeform clauses, pet addendums, maintenance riders, or any special terms — while keeping the base template compliant." },
   { q: "What states are covered?", a: "All 50 U.S. states. State-specific clauses (notice periods, security deposit caps, habitability standards) auto-apply based on the property address you enter." },
   { q: "How does e-signature work?", a: "After you finalize the lease, the tenant receives an email with a secure link. They review and sign with one click. You get notified instantly and both parties receive a signed PDF." },
-  { q: "Do I need any other software?", a: "No. LeaseFlow handles generation, delivery, e-signature, and storage in one platform. No DocuSign, no Word templates, no PDF editors needed." },
+  { q: "Do I need any other software?", a: "No. Leezign handles generation, delivery, e-signature, and storage in one platform. No DocuSign, no Word templates, no PDF editors needed." },
 ];
 
 function FAQ() {
@@ -757,7 +757,7 @@ function FAQ() {
             <h2 className="serif-italic" style={{ fontSize: "clamp(44px, 7vw, 110px)", lineHeight: .88, color: "var(--accent)" }}>Questions</h2>
             <p style={{ marginTop: 28, fontSize: "clamp(13px, 1.6vw, 15px)", lineHeight: 1.75, color: "var(--muted)", maxWidth: 300, fontWeight: 300 }}>
               Still have questions? Email us at{" "}
-              <span style={{ color: "var(--ink)", fontWeight: 500 }}>hello@leaseflow.io</span>
+              <span style={{ color: "var(--ink)", fontWeight: 500 }}>hello@leezign.io</span>
             </p>
           </div>
 
@@ -845,7 +845,7 @@ function Footer() {
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
         <div className="footer-top">
           <div>
-            <div className="display" style={{ fontSize: "clamp(28px, 5vw, 44px)", color: "var(--paper)", letterSpacing: ".06em", marginBottom: 10 }}>LEASEFLOW</div>
+            <div className="display" style={{ fontSize: "clamp(28px, 5vw, 44px)", color: "var(--paper)", letterSpacing: ".06em", marginBottom: 10 }}>LEEZIGN</div>
             <p style={{ fontSize: 12, color: "rgba(245,240,232,.3)", maxWidth: 220, lineHeight: 1.7 }}>Lease generation platform for modern landlords and property managers.</p>
           </div>
           <div className="footer-links">
@@ -869,7 +869,7 @@ function Footer() {
         <hr style={{ border: "none", borderTop: "1px solid rgba(245,240,232,.07)", marginBottom: 24 }} />
 
         <div className="footer-bottom">
-          <span style={{ fontSize: 10, color: "rgba(245,240,232,.2)", letterSpacing: ".07em" }}>© 2024 LEASEFLOW. ALL RIGHTS RESERVED.</span>
+          <span style={{ fontSize: 10, color: "rgba(245,240,232,.2)", letterSpacing: ".07em" }}>© {new Date().getFullYear()} LEEZIGN. ALL RIGHTS RESERVED.</span>
           <span style={{ fontSize: 10, color: "rgba(245,240,232,.15)", letterSpacing: ".06em" }}>BUILT FOR LANDLORDS WHO MOVE FAST</span>
         </div>
       </div>

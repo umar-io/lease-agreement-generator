@@ -1,6 +1,5 @@
 import { Plus_Jakarta_Sans, Nunito_Sans } from 'next/font/google';
 import './globals.css';
-import Navbar from './_components/navbar'
 import { AuthProvider } from './hooks/auth-context';
 import fs from "fs";
 import path from "path";
@@ -39,7 +38,6 @@ export default function RootLayout({
             style={{ display: "none" }}
             dangerouslySetInnerHTML={{ __html: sprite }}
           />
-          <Navbar />
           <ToastContainer />
           <main className="flex-1 w-full">{children}</main>
         </AuthProvider>

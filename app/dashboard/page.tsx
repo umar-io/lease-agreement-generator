@@ -1,340 +1,1029 @@
-// app/dashboard/page.tsx
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import  Icon  from "@/app/_components/icon";
-import { createClient } from "@/app/utils/supabase/server";
-import { fetchOrCreateUserProfile, createFallbackProfile } from "../lib/profile-service";
+import {
+  LayoutDashboard, FileText, PenSquare, Settings, LogOut,
+  Plus, Search, Bell, ChevronRight, MoreHorizontal,
+  Home, Building, KeyRound, ScrollText, ArrowUpRight,
+  CheckCircle2, Clock, AlertCircle, Send, Eye,
+  TrendingUp, Users, Zap, Menu, X,
+} from "lucide-react";
 
-function StatCard({ 
-  title, 
-  value, 
-  change, 
-  icon
-}: {
-  title: string;
-  value: string;
-  change: string;
-  icon: string;
-}) {
+// ── MOCK DATA ─────────────────────────────────
+const LEASES = [
+  { id: "LF-001", tenant: "James Adeyemi",   property: "12 Victoria Island, Apt 4B", type: "APARTMENT", status: "SIGNED",   date: "Mar 10, 2025", amount: "₦450,000" },
+  { id: "LF-002", tenant: "Amaka Obi",        property: "Plot 7 Lekki Phase 1",       type: "HOUSE",     status: "PENDING",  date: "Mar 12, 2025", amount: "₦1,200,000" },
+  { id: "LF-003", tenant: "Chidi Nwosu",      property: "44 Ikeja GRA, Unit 2",       type: "APARTMENT", status: "SIGNED",   date: "Mar 8, 2025",  amount: "₦320,000" },
+  { id: "LF-004", tenant: "Fatima Bello",     property: "Suite 5, Marina Business Hub",type: "COMMERCIAL",status: "DRAFT",   date: "Mar 14, 2025", amount: "₦2,800,000" },
+  { id: "LF-005", tenant: "Emmanuel Eze",     property: "3 Wuse II, Room B",           type: "ROOM",      status: "PENDING",  date: "Mar 13, 2025", amount: "₦85,000" },
+  { id: "LF-006", tenant: "Ngozi Okafor",     property: "18 Banana Island Drive",      type: "HOUSE",     status: "SIGNED",   date: "Mar 6, 2025",  amount: "₦3,500,000" },
+];
+
+const STATS = [
+  { label: "Total Leases",    value: "48",    delta: "+12%", icon: <FileText size={18} strokeWidth={1.5} />,    accent: false },
+  { label: "Signed This Month", value: "14",  delta: "+8%",  icon: <CheckCircle2 size={18} strokeWidth={1.5} />, accent: true  },
+  { label: "Pending Signature", value: "6",   delta: "-2",   icon: <Clock size={18} strokeWidth={1.5} />,       accent: false },
+  { label: "Total Value",     value: "₦48.2M", delta: "+23%", icon: <TrendingUp size={18} strokeWidth={1.5} />, accent: false },
+];
+
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  APARTMENT:  <Home size={13} strokeWidth={1.5} />,
+  HOUSE:      <Building size={13} strokeWidth={1.5} />,
+  ROOM:       <KeyRound size={13} strokeWidth={1.5} />,
+  COMMERCIAL: <ScrollText size={13} strokeWidth={1.5} />,
+};
+
+const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
+  SIGNED:  { color: "#4caf78", bg: "rgba(76,175,120,.12)", icon: <CheckCircle2 size={11} strokeWidth={2} /> },
+  PENDING: { color: "var(--gold)", bg: "rgba(201,168,76,.12)", icon: <Clock size={11} strokeWidth={2} /> },
+  DRAFT:   { color: "rgba(245,240,232,.4)", bg: "rgba(245,240,232,.06)", icon: <PenSquare size={11} strokeWidth={2} /> },
+};
+
+// ── NEW LEASE WIZARD ──────────────────────────
+const STEPS = ["Property", "Tenant", "Terms", "Review"];
+
+function NewLeaseWizard({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState(0);
+  const [type, setType] = useState("");
+
+  const types = [
+    { key:"APARTMENT",  label:"Apartment",  icon:<Home size={22} strokeWidth={1.5} />,      clauses:"12 clauses" },
+    { key:"HOUSE",      label:"House",      icon:<Building size={22} strokeWidth={1.5} />,   clauses:"15 clauses" },
+    { key:"ROOM",       label:"Room",       icon:<KeyRound size={22} strokeWidth={1.5} />,   clauses:"8 clauses"  },
+    { key:"COMMERCIAL", label:"Commercial", icon:<ScrollText size={22} strokeWidth={1.5} />, clauses:"20 clauses" },
+  ];
+
   return (
-    <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg p-6 hover-lift">
-      <div className="flex items-center justify-between mb-4">
-        <div className="w-10 h-10 bg-black dark:bg-white rounded-lg flex items-center justify-center">
-          <Icon name={icon} className="w-5 h-5 text-white dark:text-black" />
+    <div className="wz-overlay">
+      <div className="wz-panel">
+        {/* Header */}
+        <div className="wz-header">
+          <div>
+            <span className="wz-eyebrow">NEW LEASE</span>
+            <h2 className="wz-title">{STEPS[step]}</h2>
+          </div>
+          <button className="wz-close" onClick={onClose}><X size={18} strokeWidth={1.5} /></button>
         </div>
-        <span className="text-green-600 text-sm font-medium">{change}</span>
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-black dark:text-white mb-1">{value}</p>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">{title}</p>
+
+        {/* Progress */}
+        <div className="wz-progress-row">
+          {STEPS.map((s, i) => (
+            <div key={s} className={`wz-step ${i === step ? "active" : ""} ${i < step ? "done" : ""}`}>
+              <div className="wz-step-dot">
+                {i < step ? <CheckCircle2 size={12} strokeWidth={2} /> : <span>{i + 1}</span>}
+              </div>
+              <span className="wz-step-label">{s}</span>
+            </div>
+          ))}
+          <div className="wz-progress-line">
+            <div className="wz-progress-fill" style={{ width:`${(step / (STEPS.length - 1)) * 100}%` }} />
+          </div>
+        </div>
+
+        {/* Step content */}
+        <div className="wz-body">
+          {step === 0 && (
+            <div className="wz-step-content">
+              <p className="wz-step-desc">Choose the property type to load the correct template and state clauses.</p>
+              <div className="wz-type-grid">
+                {types.map(t => (
+                  <button key={t.key} className={`wz-type-card ${type === t.key ? "selected" : ""}`}
+                    onClick={() => setType(t.key)}>
+                    <div className="wz-type-icon">{t.icon}</div>
+                    <span className="wz-type-label">{t.label}</span>
+                    <span className="wz-type-clauses">{t.clauses}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="wz-field">
+                <label className="wz-label">Property Address</label>
+                <input className="wz-input" placeholder="e.g. 12 Victoria Island, Apt 4B, Lagos" />
+              </div>
+              <div className="wz-row">
+                <div className="wz-field">
+                  <label className="wz-label">Unit / Apartment No.</label>
+                  <input className="wz-input" placeholder="e.g. Apt 4B" />
+                </div>
+                <div className="wz-field">
+                  <label className="wz-label">State</label>
+                  <select className="wz-input">
+                    <option>Lagos</option>
+                    <option>Abuja (FCT)</option>
+                    <option>Rivers</option>
+                    <option>Oyo</option>
+                    <option>Kano</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="wz-step-content">
+              <p className="wz-step-desc">Enter the tenant's details. These will auto-fill throughout the document.</p>
+              <div className="wz-row">
+                <div className="wz-field">
+                  <label className="wz-label">First Name</label>
+                  <input className="wz-input" placeholder="James" />
+                </div>
+                <div className="wz-field">
+                  <label className="wz-label">Last Name</label>
+                  <input className="wz-input" placeholder="Adeyemi" />
+                </div>
+              </div>
+              <div className="wz-field">
+                <label className="wz-label">Email Address</label>
+                <input className="wz-input" type="email" placeholder="james@email.com" />
+              </div>
+              <div className="wz-field">
+                <label className="wz-label">Phone Number</label>
+                <input className="wz-input" placeholder="+234 801 234 5678" />
+              </div>
+              <div className="wz-field">
+                <label className="wz-label">Employer / Occupation</label>
+                <input className="wz-input" placeholder="e.g. Software Engineer at Flutterwave" />
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="wz-step-content">
+              <p className="wz-step-desc">Set the lease terms. All amounts in Naira (₦).</p>
+              <div className="wz-row">
+                <div className="wz-field">
+                  <label className="wz-label">Start Date</label>
+                  <input className="wz-input" type="date" />
+                </div>
+                <div className="wz-field">
+                  <label className="wz-label">Duration</label>
+                  <select className="wz-input">
+                    <option>6 Months</option>
+                    <option>1 Year</option>
+                    <option>2 Years</option>
+                    <option>Custom</option>
+                  </select>
+                </div>
+              </div>
+              <div className="wz-row">
+                <div className="wz-field">
+                  <label className="wz-label">Monthly Rent (₦)</label>
+                  <input className="wz-input" placeholder="450,000" />
+                </div>
+                <div className="wz-field">
+                  <label className="wz-label">Security Deposit (₦)</label>
+                  <input className="wz-input" placeholder="900,000" />
+                </div>
+              </div>
+              <div className="wz-field">
+                <label className="wz-label">Special Clauses (optional)</label>
+                <textarea className="wz-input" rows={3}
+                  style={{ height:"auto", padding:"12px 16px", resize:"vertical" }}
+                  placeholder="e.g. No pets allowed. Tenant responsible for generator fuel..." />
+              </div>
+              <div className="wz-toggle-row">
+                <label className="wz-label" style={{ marginBottom:0 }}>Include Pet Addendum</label>
+                <div className="wz-toggle" />
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="wz-step-content">
+              <p className="wz-step-desc">Review your lease summary before sending for signature.</p>
+              {[
+                ["Property",    "12 Victoria Island, Apt 4B, Lagos"],
+                ["Type",        type || "Apartment"],
+                ["Tenant",      "James Adeyemi"],
+                ["Email",       "james@email.com"],
+                ["Duration",    "1 Year — Apr 1, 2025 to Mar 31, 2026"],
+                ["Rent",        "₦450,000 / month"],
+                ["Deposit",     "₦900,000"],
+              ].map(([k, v]) => (
+                <div key={k} className="wz-review-row">
+                  <span className="wz-review-key">{k}</span>
+                  <span className="wz-review-val">{v}</span>
+                </div>
+              ))}
+              <div className="wz-review-notice">
+                <Zap size={13} color="var(--gold)" />
+                <span>State-specific clauses for <strong>Lagos</strong> will be applied automatically.</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="wz-footer">
+          {step > 0
+            ? <button className="wz-btn-back" onClick={() => setStep(s => s - 1)}>Back</button>
+            : <div />
+          }
+          {step < STEPS.length - 1
+            ? <button className="wz-btn-next" onClick={() => setStep(s => s + 1)}>
+                Continue <ChevronRight size={14} strokeWidth={2} />
+              </button>
+            : <button className="wz-btn-send">
+                <Send size={14} strokeWidth={2} /> Send for Signature
+              </button>
+          }
+        </div>
       </div>
     </div>
   );
 }
 
-function ActionCard({
-  title,
-  description,
-  href,
-  icon,
-  isPrimary = false,
-}: {
-  title: string;
-  description: string;
-  href: string;
-  icon: string;
-  isPrimary?: boolean;
-}) {
-  return (
-    <Link href={href} className="block group">
-      <div className={`p-8 rounded-lg border transition-all duration-200 hover-lift ${
-        isPrimary 
-          ? "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white" 
-          : "bg-white dark:bg-black border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
-      }`}>
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-6 ${
-          isPrimary 
-            ? "bg-white dark:bg-black" 
-            : "bg-black dark:bg-white"
-        }`}>
-          <Icon name={icon} className={`w-6 h-6 ${
-            isPrimary ? "text-black dark:text-white" : "text-white dark:text-black"
-          }`} />
-        </div>
-        
-        <h3 className={`text-xl font-bold mb-3 ${
-          isPrimary ? "text-white dark:text-black" : "text-black dark:text-white"
-        }`}>
-          {title}
-        </h3>
-        <p className={`leading-relaxed mb-6 ${
-          isPrimary ? "text-gray-300 dark:text-gray-700" : "text-gray-600 dark:text-gray-400"
-        }`}>
-          {description}
-        </p>
-        
-        <div className="flex items-center gap-2">
-          <span className={`font-medium text-sm ${
-            isPrimary ? "text-white dark:text-black" : "text-black dark:text-white"
-          }`}>
-            Get Started
-          </span>
-          <Icon 
-            name="arrow-right" 
-            className={`w-4 h-4 transition-transform duration-200 group-hover:translate-x-1 ${
-              isPrimary ? "text-white dark:text-black" : "text-black dark:text-white"
-            }`} 
-          />
-        </div>
-      </div>
-    </Link>
+// ── DASHBOARD ────────────────────────────────
+export default function DashboardPage() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showWizard, setShowWizard]   = useState(false);
+  const [activeNav, setActiveNav]     = useState("dashboard");
+  const [search, setSearch]           = useState("");
+
+  const filtered = LEASES.filter(l =>
+    l.tenant.toLowerCase().includes(search.toLowerCase()) ||
+    l.property.toLowerCase().includes(search.toLowerCase()) ||
+    l.id.toLowerCase().includes(search.toLowerCase())
   );
-}
-
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return redirect("/auth/login");
-
-  let profile = null;
-
-  try {
-    profile = await fetchOrCreateUserProfile(
-      user.id,
-      user.email!,
-      user.user_metadata?.full_name
-    );
-  } catch (error) {
-    console.error("❌ Database error:", error);
-    profile = createFallbackProfile(
-      user.id,
-      user.email!,
-      user.user_metadata?.full_name || user.user_metadata?.name
-    );
-  }
-
-  if (!profile.onboarded) {
-    return redirect("/onboarding");
-  }
-
-  const recentLeases = profile.leases?.slice(0, 5) || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Hero Section */}
-        <section className="mb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Hero Text */}
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 border border-green-200 dark:border-green-800 rounded-full bg-green-50 dark:bg-green-950">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-green-700 dark:text-green-300 text-sm font-medium">
-                  System Active
-                </span>
-              </div>
-              
-              <div>
-                <h1 className="text-5xl md:text-6xl font-bold text-black dark:text-white leading-tight mb-6">
-                  Welcome back, {profile?.fullName?.split(' ')[0] || 'User'}
-                </h1>
-                <p className="text-xl text-gray-600 dark:text-gray-400 leading-relaxed">
-                  Your digital workspace for creating legally binding lease agreements. 
-                  Ready to generate your next document?
-                </p>
-              </div>
+    <>
+      <style>{`
+        @keyframes slideUp {
+          from { opacity:0; transform:translateY(16px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity:0; } to { opacity:1; }
+        }
+        @keyframes slideRight {
+          from { opacity:0; transform:translateX(-20px); }
+          to   { opacity:1; transform:translateX(0); }
+        }
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/generate" className="btn btn-primary inline-flex items-center gap-2">
-                  <Icon name="plus-circle" className="w-5 h-5" />
-                  Create New Lease
-                </Link>
-                <button className="btn btn-secondary inline-flex items-center gap-2">
-                  <Icon name="folder-open" className="w-5 h-5" />
-                  Open Draft
+        /* ── LAYOUT ── */
+        .db-layout {
+          min-height:100svh;
+          background:var(--paper);
+          display:grid;
+          grid-template-columns:240px 1fr;
+          grid-template-rows:1fr;
+        }
+        @media (max-width:900px) {
+          .db-layout { grid-template-columns:1fr; }
+        }
+
+        /* ── SIDEBAR ── */
+        .db-sidebar {
+          background:var(--ink);
+          display:flex; flex-direction:column;
+          padding:0;
+          position:relative; overflow:hidden;
+          grid-row:1;
+        }
+        @media (max-width:900px) {
+          .db-sidebar {
+            position:fixed; inset:0; right:auto;
+            width:260px; z-index:300;
+            transform:translateX(-100%);
+            transition:transform .35s cubic-bezier(.77,0,.18,1);
+          }
+          .db-sidebar.open { transform:translateX(0); }
+        }
+
+        /* Grid overlay in sidebar */
+        .db-sidebar::before {
+          content:'';
+          position:absolute; inset:0;
+          background-image:
+            linear-gradient(rgba(245,240,232,.03) 1px,transparent 1px),
+            linear-gradient(90deg,rgba(245,240,232,.03) 1px,transparent 1px);
+          background-size:40px 40px;
+          pointer-events:none;
+        }
+
+        .db-sidebar-inner { position:relative; z-index:1; display:flex; flex-direction:column; height:100%; }
+
+        .db-wordmark {
+          padding:28px 24px 24px;
+          font-family:var(--font-display);
+          font-size:22px; letter-spacing:.1em; color:var(--paper);
+          border-bottom:1px solid rgba(245,240,232,.06);
+          flex-shrink:0;
+        }
+
+        .db-nav { padding:16px 12px; flex:1; display:flex; flex-direction:column; gap:2px; overflow-y:auto; }
+
+        .db-nav-section {
+          font-size:9px; font-weight:700;
+          letter-spacing:.2em; text-transform:uppercase;
+          color:rgba(245,240,232,.25);
+          padding:16px 12px 8px;
+        }
+
+        .db-nav-item {
+          display:flex; align-items:center; gap:12px;
+          padding:11px 12px;
+          font-size:12px; font-weight:500; letter-spacing:.02em;
+          color:rgba(245,240,232,.45);
+          background:none; border:none; cursor:pointer;
+          text-decoration:none; width:100%;
+          transition:color .2s, background .2s;
+          position:relative;
+        }
+        .db-nav-item:hover { color:rgba(245,240,232,.85); background:rgba(245,240,232,.04); }
+        .db-nav-item.active { color:var(--paper); background:rgba(245,240,232,.07); }
+        .db-nav-item.active::before {
+          content:'';
+          position:absolute; left:0; top:0; bottom:0;
+          width:3px; background:var(--accent);
+        }
+
+        .db-sidebar-footer {
+          padding:16px 12px 24px;
+          border-top:1px solid rgba(245,240,232,.06);
+        }
+        .db-user-row {
+          display:flex; align-items:center; gap:12px; padding:10px 12px;
+        }
+        .db-avatar {
+          width:36px; height:36px; flex-shrink:0;
+          background:color-mix(in srgb,var(--accent) 20%,transparent);
+          border:1px solid rgba(245,240,232,.12);
+          display:flex; align-items:center; justify-content:center;
+          font-family:var(--font-display); font-size:16px; color:var(--paper);
+        }
+        .db-user-name { font-size:12px; font-weight:600; color:var(--paper); }
+        .db-user-email { font-size:10px; color:rgba(245,240,232,.35); margin-top:2px; }
+
+        /* ── MAIN ── */
+        .db-main {
+          display:flex; flex-direction:column;
+          min-height:100svh;
+          overflow:hidden;
+        }
+
+        /* Topbar */
+        .db-topbar {
+          display:flex; align-items:center; justify-content:space-between;
+          padding:20px clamp(20px,3vw,36px);
+          border-bottom:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+          background:var(--paper);
+          position:sticky; top:0; z-index:10;
+          flex-shrink:0;
+        }
+        .db-topbar-left { display:flex; align-items:center; gap:16px; }
+        .db-mobile-menu-btn {
+          display:none; background:none; border:none; cursor:pointer; padding:4px;
+        }
+        @media (max-width:900px) { .db-mobile-menu-btn { display:flex; align-items:center; } }
+
+        .db-page-title {
+          font-family:var(--font-display);
+          font-size:clamp(18px,2.5vw,26px);
+          letter-spacing:.04em; color:var(--ink);
+        }
+        .db-page-badge {
+          font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+          padding:3px 10px;
+          border:1px solid color-mix(in srgb,var(--ink) 15%,transparent);
+          color:var(--muted);
+        }
+
+        .db-topbar-right { display:flex; align-items:center; gap:12px; }
+        .db-search-wrap {
+          display:flex; align-items:center; gap:10px;
+          padding:10px 16px;
+          background:var(--cream);
+          border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+          width:clamp(160px,20vw,280px);
+          transition:border-color .2s, box-shadow .2s;
+        }
+        .db-search-wrap:focus-within {
+          border-color:var(--ink);
+          box-shadow:3px 3px 0 var(--accent);
+        }
+        .db-search-input {
+          background:none; border:none; outline:none;
+          font-family:var(--font-body); font-size:12px; color:var(--ink);
+          width:100%;
+        }
+        .db-search-input::placeholder { color:var(--muted); }
+
+        .db-icon-btn {
+          width:40px; height:40px;
+          background:var(--cream);
+          border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+          display:flex; align-items:center; justify-content:center;
+          cursor:pointer; transition:background .2s, border-color .2s;
+          position:relative;
+        }
+        .db-icon-btn:hover { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+        .db-notif-dot {
+          position:absolute; top:8px; right:8px;
+          width:6px; height:6px; border-radius:50%;
+          background:var(--accent);
+        }
+
+        .db-new-btn {
+          display:flex; align-items:center; gap:8px;
+          padding:10px 20px;
+          background:var(--ink); color:var(--paper);
+          border:none; font-family:var(--font-body);
+          font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+          cursor:pointer; position:relative; overflow:hidden;
+          transition:box-shadow .2s;
+          white-space:nowrap;
+        }
+        .db-new-btn::before {
+          content:''; position:absolute; inset:0;
+          background:var(--accent);
+          transform:translateX(-101%);
+          transition:transform .4s cubic-bezier(.77,0,.18,1);
+        }
+        .db-new-btn:hover::before { transform:translateX(0); }
+        .db-new-btn:hover { box-shadow:4px 4px 0 color-mix(in srgb,var(--ink) 20%,transparent); }
+        .db-new-btn > * { position:relative; z-index:1; }
+
+        /* ── CONTENT ── */
+        .db-content { padding:clamp(20px,3vw,36px); overflow-y:auto; flex:1; }
+
+        /* Stats grid */
+        .db-stats-grid {
+          display:grid;
+          grid-template-columns:repeat(4,1fr);
+          gap:14px;
+          margin-bottom:clamp(24px,3vw,36px);
+          animation:slideUp .5s cubic-bezier(.77,0,.18,1) .1s both;
+        }
+        @media (max-width:1100px) { .db-stats-grid { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:500px)  { .db-stats-grid { grid-template-columns:1fr; } }
+
+        .db-stat-card {
+          background:var(--cream);
+          border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+          padding:24px 22px;
+          position:relative; overflow:hidden;
+          transition:transform .25s, box-shadow .25s;
+        }
+        .db-stat-card:hover {
+          transform:translateY(-3px);
+          box-shadow:4px 4px 0 color-mix(in srgb,var(--ink) 10%,transparent);
+        }
+        .db-stat-card.accent { border-left:3px solid var(--accent); }
+        .db-stat-top {
+          display:flex; justify-content:space-between; align-items:flex-start;
+          margin-bottom:16px;
+        }
+        .db-stat-icon {
+          width:36px; height:36px;
+          background:color-mix(in srgb,var(--ink) 6%,transparent);
+          border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+          display:flex; align-items:center; justify-content:center;
+          color:var(--ink);
+        }
+        .db-stat-card.accent .db-stat-icon { background:color-mix(in srgb,var(--accent) 8%,transparent); color:var(--accent); }
+        .db-stat-delta {
+          font-size:10px; font-weight:700; letter-spacing:.06em;
+          padding:3px 8px;
+          background:color-mix(in srgb,#4caf78 10%,transparent);
+          color:#4caf78;
+        }
+        .db-stat-value {
+          font-family:var(--font-display);
+          font-size:clamp(28px,3vw,40px);
+          letter-spacing:.02em; color:var(--ink); line-height:1;
+          margin-bottom:6px;
+        }
+        .db-stat-label {
+          font-size:11px; color:var(--muted);
+          letter-spacing:.04em; font-weight:500;
+        }
+
+        /* Section header */
+        .db-section-header {
+          display:flex; align-items:center; justify-content:space-between;
+          margin-bottom:16px;
+          animation:slideUp .5s cubic-bezier(.77,0,.18,1) .2s both;
+        }
+        .db-section-title {
+          font-family:var(--font-display);
+          font-size:clamp(16px,2vw,22px);
+          letter-spacing:.04em; color:var(--ink);
+        }
+        .db-view-all {
+          display:inline-flex; align-items:center; gap:6px;
+          font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+          color:var(--muted); text-decoration:none;
+          transition:color .2s;
+        }
+        .db-view-all:hover { color:var(--accent); }
+
+        /* Table */
+        .db-table-wrap {
+          border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+          overflow:hidden;
+          animation:slideUp .5s cubic-bezier(.77,0,.18,1) .3s both;
+          overflow-x:auto;
+        }
+
+        .db-table { width:100%; border-collapse:collapse; min-width:640px; }
+
+        .db-table th {
+          padding:12px 18px;
+          font-size:9px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+          color:var(--muted);
+          background:var(--cream);
+          border-bottom:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+          text-align:left; white-space:nowrap;
+        }
+
+        .db-table td {
+          padding:15px 18px;
+          font-size:13px; color:var(--ink);
+          border-bottom:1px solid color-mix(in srgb,var(--ink) 5%,transparent);
+          vertical-align:middle;
+        }
+
+        .db-table tr:last-child td { border-bottom:none; }
+
+        .db-table tr:hover td { background:color-mix(in srgb,var(--ink) 2%,transparent); }
+
+        .db-lease-id {
+          font-family:var(--font-display);
+          font-size:14px; letter-spacing:.06em; color:var(--accent);
+        }
+
+        .db-tenant-name { font-weight:600; font-size:13px; }
+        .db-tenant-prop { font-size:11px; color:var(--muted); margin-top:2px; max-width:220px; }
+
+        .db-type-badge {
+          display:inline-flex; align-items:center; gap:5px;
+          padding:3px 9px;
+          font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+          border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);
+          color:var(--muted);
+          white-space:nowrap;
+        }
+
+        .db-status-badge {
+          display:inline-flex; align-items:center; gap:5px;
+          padding:4px 10px;
+          font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+          white-space:nowrap;
+        }
+
+        .db-amount { font-family:var(--font-display); font-size:15px; letter-spacing:.02em; }
+
+        .db-action-btn {
+          width:30px; height:30px;
+          background:none;
+          border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
+          display:inline-flex; align-items:center; justify-content:center;
+          cursor:pointer; color:var(--muted);
+          transition:background .2s, color .2s, border-color .2s;
+          margin-left:4px;
+        }
+        .db-action-btn:hover { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+        /* Quick actions */
+        .db-quick-row {
+          display:grid;
+          grid-template-columns:repeat(4,1fr);
+          gap:12px;
+          margin-bottom:clamp(24px,3vw,36px);
+          animation:slideUp .5s cubic-bezier(.77,0,.18,1) .15s both;
+        }
+        @media (max-width:800px) { .db-quick-row { grid-template-columns:repeat(2,1fr); } }
+
+        .db-quick-card {
+          background:var(--cream);
+          border:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+          padding:20px;
+          cursor:pointer;
+          transition:transform .25s, box-shadow .25s, background .25s;
+          position:relative; overflow:hidden;
+        }
+        .db-quick-card::before {
+          content:''; position:absolute; inset:0;
+          background:var(--ink);
+          transform:translateY(101%);
+          transition:transform .4s cubic-bezier(.77,0,.18,1);
+        }
+        .db-quick-card:hover::before { transform:translateY(0); }
+        .db-quick-card:hover { color:var(--paper); }
+        .db-quick-card > * { position:relative; z-index:1; }
+        .db-quick-icon {
+          width:36px; height:36px;
+          border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);
+          display:flex; align-items:center; justify-content:center;
+          margin-bottom:12px;
+          transition:border-color .2s;
+        }
+        .db-quick-card:hover .db-quick-icon { border-color:rgba(245,240,232,.2); }
+        .db-quick-title { font-size:12px; font-weight:700; letter-spacing:.04em; margin-bottom:4px; }
+        .db-quick-desc  { font-size:11px; color:var(--muted); transition:color .2s; }
+        .db-quick-card:hover .db-quick-desc { color:rgba(245,240,232,.5); }
+
+        /* Mobile overlay */
+        .db-sidebar-overlay {
+          display:none;
+          position:fixed; inset:0;
+          background:rgba(10,10,10,.5);
+          z-index:299;
+        }
+        @media (max-width:900px) {
+          .db-sidebar-overlay.show { display:block; }
+        }
+
+        /* ── WIZARD ── */
+        .wz-overlay {
+          position:fixed; inset:0;
+          background:rgba(10,10,10,.6);
+          backdrop-filter:blur(4px);
+          z-index:400;
+          display:flex; align-items:flex-end; justify-content:flex-end;
+          animation:fadeIn .2s ease both;
+        }
+        @media (min-width:640px) {
+          .wz-overlay { align-items:stretch; }
+        }
+
+        .wz-panel {
+          width:100%;
+          max-width:560px;
+          background:var(--paper);
+          display:flex; flex-direction:column;
+          max-height:100svh;
+          overflow:hidden;
+          animation:slideRight .35s cubic-bezier(.77,0,.18,1) both;
+        }
+
+        .wz-header {
+          display:flex; justify-content:space-between; align-items:flex-start;
+          padding:28px 32px 20px;
+          border-bottom:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+          flex-shrink:0;
+        }
+        .wz-eyebrow {
+          font-size:9px; font-weight:700; letter-spacing:.2em;
+          color:var(--accent); display:block; margin-bottom:4px;
+        }
+        .wz-title {
+          font-family:var(--font-display);
+          font-size:clamp(22px,3vw,32px); letter-spacing:.04em;
+          color:var(--ink);
+        }
+        .wz-close {
+          width:36px; height:36px;
+          background:var(--cream);
+          border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);
+          display:flex; align-items:center; justify-content:center;
+          cursor:pointer; flex-shrink:0;
+          transition:background .2s;
+        }
+        .wz-close:hover { background:var(--ink); color:var(--paper); }
+
+        .wz-progress-row {
+          display:flex; align-items:center; gap:0;
+          padding:20px 32px;
+          border-bottom:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+          position:relative;
+          flex-shrink:0;
+        }
+        .wz-progress-line {
+          position:absolute; left:32px; right:32px; top:50%;
+          height:1px; background:color-mix(in srgb,var(--ink) 10%,transparent);
+          z-index:0;
+        }
+        .wz-progress-fill {
+          position:absolute; inset-y:0; left:0;
+          background:var(--accent);
+          transition:width .4s ease;
+        }
+        .wz-step {
+          display:flex; flex-direction:column; align-items:center; gap:6px;
+          flex:1; position:relative; z-index:1;
+        }
+        .wz-step-dot {
+          width:28px; height:28px;
+          background:var(--paper);
+          border:1.5px solid color-mix(in srgb,var(--ink) 18%,transparent);
+          display:flex; align-items:center; justify-content:center;
+          font-size:11px; font-weight:700; color:var(--muted);
+          transition:background .3s, border-color .3s, color .3s;
+        }
+        .wz-step.active .wz-step-dot { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 6%,transparent); }
+        .wz-step.done  .wz-step-dot  { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+        .wz-step-label { font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+        .wz-step.active .wz-step-label { color:var(--ink); }
+
+        .wz-body { flex:1; overflow-y:auto; padding:28px 32px; }
+        .wz-step-content { display:flex; flex-direction:column; gap:18px; }
+        .wz-step-desc { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:4px; }
+
+        .wz-type-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+        @media (max-width:480px) { .wz-type-grid { grid-template-columns:repeat(2,1fr); } }
+
+        .wz-type-card {
+          padding:18px 12px;
+          background:var(--cream);
+          border:1.5px solid color-mix(in srgb,var(--ink) 10%,transparent);
+          display:flex; flex-direction:column; align-items:center; gap:8px;
+          cursor:pointer; transition:border-color .2s, background .2s;
+        }
+        .wz-type-card:hover { border-color:color-mix(in srgb,var(--ink) 30%,transparent); }
+        .wz-type-card.selected { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 4%,transparent); }
+        .wz-type-icon { color:var(--ink); }
+        .wz-type-card.selected .wz-type-icon { color:var(--accent); }
+        .wz-type-label { font-size:11px; font-weight:700; letter-spacing:.06em; }
+        .wz-type-clauses { font-size:9px; color:var(--muted); letter-spacing:.06em; }
+
+        .wz-field { display:flex; flex-direction:column; gap:7px; }
+        .wz-label { font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+        .wz-input {
+          width:100%; height:46px;
+          padding:0 14px;
+          background:var(--cream);
+          border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
+          font-family:var(--font-body); font-size:13px; color:var(--ink);
+          outline:none; appearance:none; border-radius:0;
+          transition:border-color .2s, box-shadow .2s;
+        }
+        .wz-input:focus { border-color:var(--ink); box-shadow:3px 3px 0 var(--accent); }
+        .wz-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        @media (max-width:420px) { .wz-row { grid-template-columns:1fr; } }
+
+        .wz-toggle-row {
+          display:flex; align-items:center; justify-content:space-between;
+          padding:14px 0;
+          border-top:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+        }
+        .wz-toggle {
+          width:44px; height:24px;
+          background:color-mix(in srgb,var(--ink) 15%,transparent);
+          border-radius:12px; position:relative; cursor:pointer;
+          transition:background .2s;
+        }
+        .wz-toggle::after {
+          content:''; position:absolute;
+          top:3px; left:3px;
+          width:18px; height:18px;
+          background:var(--paper); border-radius:50%;
+          transition:transform .2s;
+        }
+
+        .wz-review-row {
+          display:flex; justify-content:space-between; align-items:flex-start;
+          padding:12px 0;
+          border-bottom:1px solid color-mix(in srgb,var(--ink) 6%,transparent);
+          gap:20px;
+        }
+        .wz-review-row:last-of-type { border-bottom:none; }
+        .wz-review-key { font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); flex-shrink:0; }
+        .wz-review-val { font-size:13px; color:var(--ink); font-weight:500; text-align:right; }
+
+        .wz-review-notice {
+          display:flex; align-items:center; gap:10px;
+          padding:14px 16px;
+          background:color-mix(in srgb,var(--gold) 8%,transparent);
+          border:1px solid color-mix(in srgb,var(--gold) 20%,transparent);
+          border-left:3px solid var(--gold);
+          font-size:12px; color:var(--ink); margin-top:8px;
+        }
+
+        .wz-footer {
+          display:flex; justify-content:space-between; align-items:center;
+          padding:20px 32px;
+          border-top:1px solid color-mix(in srgb,var(--ink) 8%,transparent);
+          flex-shrink:0;
+        }
+        .wz-btn-back {
+          background:none; border:none; cursor:pointer;
+          font-family:var(--font-body); font-size:12px; font-weight:600;
+          letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
+          transition:color .2s; padding:12px 0;
+        }
+        .wz-btn-back:hover { color:var(--ink); }
+        .wz-btn-next {
+          display:inline-flex; align-items:center; gap:8px;
+          padding:13px 28px;
+          background:var(--ink); color:var(--paper);
+          border:none; font-family:var(--font-body);
+          font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+          cursor:pointer; transition:background .25s;
+        }
+        .wz-btn-next:hover { background:var(--accent); }
+        .wz-btn-send {
+          display:inline-flex; align-items:center; gap:8px;
+          padding:13px 28px;
+          background:var(--accent); color:var(--paper);
+          border:none; font-family:var(--font-body);
+          font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+          cursor:pointer; transition:opacity .2s;
+        }
+        .wz-btn-send:hover { opacity:.85; }
+
+        /* Empty state */
+        .db-empty {
+          padding:60px 20px;
+          display:flex; flex-direction:column; align-items:center; gap:16px;
+          color:var(--muted);
+        }
+        .db-empty-icon {
+          width:56px; height:56px;
+          border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);
+          display:flex; align-items:center; justify-content:center;
+          color:var(--muted);
+        }
+      `}</style>
+
+      {/* Wizard */}
+      {showWizard && <NewLeaseWizard onClose={() => setShowWizard(false)} />}
+
+      {/* Sidebar overlay (mobile) */}
+      <div className={`db-sidebar-overlay ${sidebarOpen ? "show" : ""}`} onClick={() => setSidebarOpen(false)} />
+
+      <div className="db-layout">
+        {/* ─── SIDEBAR ─── */}
+        <aside className={`db-sidebar ${sidebarOpen ? "open" : ""}`}>
+          <div className="db-sidebar-inner">
+            <div className="db-wordmark">LEEZIGN</div>
+
+            <nav className="db-nav">
+              <span className="db-nav-section">Main</span>
+              {[
+                { key:"dashboard", label:"Dashboard",    icon:<LayoutDashboard size={15} strokeWidth={1.5} /> },
+                { key:"leases",    label:"All Leases",   icon:<FileText size={15} strokeWidth={1.5} /> },
+                { key:"templates", label:"Templates",    icon:<ScrollText size={15} strokeWidth={1.5} /> },
+                { key:"drafts",    label:"Drafts",       icon:<PenSquare size={15} strokeWidth={1.5} /> },
+              ].map(n => (
+                <button key={n.key} className={`db-nav-item ${activeNav === n.key ? "active" : ""}`}
+                  onClick={() => { setActiveNav(n.key); setSidebarOpen(false); }}>
+                  {n.icon} {n.label}
                 </button>
-              </div>
-            </div>
+              ))}
 
-            {/* Hero Visual */}
-            <div className="relative">
-              <div className="aspect-video rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">
-                <div 
-                  className="w-full h-full bg-cover bg-center" 
-                  style={{
-                    backgroundImage: `url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1000')`
-                  }}
+              <span className="db-nav-section">Account</span>
+              {[
+                { key:"tenants",  label:"Tenants",   icon:<Users size={15} strokeWidth={1.5} /> },
+                { key:"settings", label:"Settings",  icon:<Settings size={15} strokeWidth={1.5} /> },
+              ].map(n => (
+                <button key={n.key} className={`db-nav-item ${activeNav === n.key ? "active" : ""}`}
+                  onClick={() => { setActiveNav(n.key); setSidebarOpen(false); }}>
+                  {n.icon} {n.label}
+                </button>
+              ))}
+            </nav>
+
+            <div className="db-sidebar-footer">
+              <div className="db-user-row">
+                <div className="db-avatar">U</div>
+                <div>
+                  <div className="db-user-name">Umar</div>
+                  <div className="db-user-email">umar@leaseflow.io</div>
+                </div>
+              </div>
+              <Link href="/auth/login" className="db-nav-item" style={{ marginTop:4 }}>
+                <LogOut size={15} strokeWidth={1.5} /> Sign Out
+              </Link>
+            </div>
+          </div>
+        </aside>
+
+        {/* ─── MAIN ─── */}
+        <main className="db-main">
+
+          {/* Topbar */}
+          <div className="db-topbar">
+            <div className="db-topbar-left">
+              <button className="db-mobile-menu-btn" onClick={() => setSidebarOpen(true)}>
+                <Menu size={20} color="var(--ink)" strokeWidth={1.5} />
+              </button>
+              <h1 className="db-page-title">Dashboard</h1>
+              <span className="db-page-badge">March 2025</span>
+            </div>
+            <div className="db-topbar-right">
+              <div className="db-search-wrap">
+                <Search size={13} color="var(--muted)" strokeWidth={1.5} />
+                <input
+                  className="db-search-input"
+                  placeholder="Search leases..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
                 />
-                <div className="absolute inset-0 bg-black/20" />
-                <div className="absolute bottom-6 left-6 text-white">
-                  <p className="text-sm font-medium mb-1">Professional Workspace</p>
-                  <p className="text-lg font-bold">Generate. Review. Execute.</p>
-                </div>
               </div>
+              <button className="db-icon-btn">
+                <Bell size={15} strokeWidth={1.5} />
+                <div className="db-notif-dot" />
+              </button>
+              <button className="db-new-btn" onClick={() => setShowWizard(true)}>
+                <Plus size={14} strokeWidth={2} /> New Lease
+              </button>
             </div>
           </div>
-        </section>
 
-        {/* Stats Grid */}
-        <section className="mb-16">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <StatCard
-              title="Active Leases"
-              value="24"
-              change="+12%"
-              icon="file-check"
-            />
-            <StatCard
-              title="This Month"
-              value="8"
-              change="+4"
-              icon="trending-up"
-            />
-            <StatCard
-              title="Revenue"
-              value="$12.4k"
-              change="+18%"
-              icon="dollar-sign"
-            />
-            <StatCard
-              title="Saved Time"
-              value="46h"
-              change="+22h"
-              icon="clock"
-            />
-          </div>
-        </section>
+          <div className="db-content">
 
-        {/* Quick Actions */}
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-black dark:text-white mb-8">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <ActionCard
-              title="Generate Lease"
-              description="Create a new legally binding rental agreement with our intelligent form system."
-              href="/generate"
-              icon="plus-circle"
-              isPrimary={true}
-            />
-            <ActionCard
-              title="Browse Templates"
-              description="Explore our library of attorney-reviewed templates for all property types."
-              href="/templates"
-              icon="layers"
-            />
-            <ActionCard
-              title="Document Manager"
-              description="Organize, review, and manage all your lease documents in one place."
-              href="/documents"
-              icon="folder-open"
-            />
-          </div>
-        </section>
-
-        {/* Recent Agreements */}
-        <section>
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-black dark:text-white">Recent Agreements</h2>
-            <Link 
-              href="/documents" 
-              className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white font-medium transition-colors duration-200"
-            >
-              View All
-              <Icon name="arrow-right" className="w-4 h-4" />
-            </Link>
-          </div>
-
-          <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
-            {recentLeases.length > 0 ? (
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                    <th className="px-6 py-4 text-left text-sm font-medium text-black dark:text-white">
-                      Tenant
-                    </th>
-                    <th className="hidden sm:table-cell px-6 py-4 text-left text-sm font-medium text-black dark:text-white">
-                      Property
-                    </th>
-                    <th className="hidden md:table-cell px-6 py-4 text-left text-sm font-medium text-black dark:text-white">
-                      Last Updated
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-black dark:text-white">
-                      Status
-                    </th>
-                    <th className="px-6 py-4"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentLeases.map((lease, index) => (
-                    <tr
-                      key={lease.id}
-                      className="border-b border-gray-100 dark:border-gray-900 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-black dark:bg-white rounded-full flex items-center justify-center">
-                            <Icon name="user" className="w-4 h-4 text-white dark:text-black" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-black dark:text-white">{lease.tenantName}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Tenant</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="hidden sm:table-cell px-6 py-4 text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center gap-2">
-                          <Icon name="map-pin" className="w-4 h-4" />
-                          {lease?.streetAddress}
-                        </div>
-                      </td>
-                      <td className="hidden md:table-cell px-6 py-4 text-gray-600 dark:text-gray-400">
-                        {new Date(lease.updatedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                          lease.status === "Draft"
-                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                            : lease.status === "Finalized"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                              : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                        }`}>
-                          {lease.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
-                          <Icon name="more-horizontal" className="w-5 h-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="p-16 text-center">
-                <div className="w-16 h-16 bg-black dark:bg-white rounded-lg flex items-center justify-center mx-auto mb-6">
-                  <Icon name="folder-plus" className="w-8 h-8 text-white dark:text-black" />
+            {/* Stats */}
+            <div className="db-stats-grid">
+              {STATS.map((s, i) => (
+                <div key={i} className={`db-stat-card ${s.accent ? "accent" : ""}`}>
+                  <div className="db-stat-top">
+                    <div className="db-stat-icon">{s.icon}</div>
+                    <span className="db-stat-delta">{s.delta}</span>
+                  </div>
+                  <div className="db-stat-value">{s.value}</div>
+                  <div className="db-stat-label">{s.label}</div>
                 </div>
-                <h3 className="text-xl font-bold text-black dark:text-white mb-4">
-                  Ready to create your first lease?
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-                  Get started with our intelligent lease generator. Create professional, 
-                  legally binding agreements in minutes.
-                </p>
-                <Link href="/generate" className="btn btn-primary inline-flex items-center gap-2">
-                  Create First Lease
-                  <Icon name="arrow-right" className="w-4 h-4" />
-                </Link>
-              </div>
-            )}
+              ))}
+            </div>
+
+            {/* Quick actions */}
+            <div className="db-section-header" style={{ animation:"slideUp .5s cubic-bezier(.77,0,.18,1) .15s both" }}>
+              <span className="db-section-title">Quick Actions</span>
+            </div>
+            <div className="db-quick-row">
+              {[
+                { icon:<Plus size={16} strokeWidth={1.5} />,         title:"New Lease",       desc:"Start from a template", action:() => setShowWizard(true) },
+                { icon:<FileText size={16} strokeWidth={1.5} />,     title:"View Templates",  desc:"Browse all 4 types",    action:() => {} },
+                { icon:<Send size={16} strokeWidth={1.5} />,         title:"Pending Sends",   desc:"6 awaiting signature",  action:() => {} },
+                { icon:<ArrowUpRight size={16} strokeWidth={1.5} />, title:"Analytics",       desc:"View lease insights",   action:() => {} },
+              ].map((q, i) => (
+                <div key={i} className="db-quick-card" onClick={q.action}>
+                  <div className="db-quick-icon">{q.icon}</div>
+                  <div className="db-quick-title">{q.title}</div>
+                  <div className="db-quick-desc">{q.desc}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Leases table */}
+            <div className="db-section-header">
+              <span className="db-section-title">Recent Leases</span>
+              <a href="#" className="db-view-all">View All <ChevronRight size={11} strokeWidth={2} /></a>
+            </div>
+
+            <div className="db-table-wrap">
+              {filtered.length > 0 ? (
+                <table className="db-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Tenant</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                      <th>Amount</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(l => {
+                      const sc = STATUS_CONFIG[l.status];
+                      return (
+                        <tr key={l.id}>
+                          <td><span className="db-lease-id">{l.id}</span></td>
+                          <td>
+                            <div className="db-tenant-name">{l.tenant}</div>
+                            <div className="db-tenant-prop">{l.property}</div>
+                          </td>
+                          <td>
+                            <span className="db-type-badge">
+                              {TYPE_ICONS[l.type]} {l.type}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="db-status-badge"
+                              style={{ color:sc.color, background:sc.bg }}>
+                              {sc.icon} {l.status}
+                            </span>
+                          </td>
+                          <td style={{ fontSize:12, color:"var(--muted)", whiteSpace:"nowrap" }}>{l.date}</td>
+                          <td><span className="db-amount">{l.amount}</span></td>
+                          <td>
+                            <button className="db-action-btn" title="View"><Eye size={13} strokeWidth={1.5} /></button>
+                            <button className="db-action-btn" title="More"><MoreHorizontal size={13} strokeWidth={1.5} /></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="db-empty">
+                  <div className="db-empty-icon"><Search size={22} strokeWidth={1.5} /></div>
+                  <p style={{ fontSize:13, fontWeight:500 }}>No leases match "{search}"</p>
+                  <button onClick={() => setSearch("")} style={{ fontSize:11, color:"var(--accent)", background:"none", border:"none", cursor:"pointer", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase" }}>
+                    Clear Search
+                  </button>
+                </div>
+              )}
+            </div>
+
           </div>
-        </section>
+        </main>
       </div>
-    </div>
+    </>
   );
 }
