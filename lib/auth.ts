@@ -10,12 +10,12 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET!,
 
   database: drizzleAdapter(db, {
-    provider:  "pg",
+    provider: "pg",
     usePlural: false,
     schema: {
-      user:         schema.user,
-      session:      schema.session,
-      account:      schema.account,
+      user: schema.user,
+      session: schema.session,
+      account: schema.account,
       verification: schema.verification,
     },
   }),
@@ -25,16 +25,20 @@ export const auth = betterAuth({
   },
 
   session: {
-    expiresIn:   60 * 60 * 24 * 7,
-    updateAge:   60 * 60 * 24,
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
     cookieCache: {
       enabled: true,
-      maxAge:  5 * 60,
+      maxAge: 5 * 60,
     },
   },
 
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins: [
+    "http://localhost:3000",
+    "https://leezign.vercel.app",
+    "https://leezign-git-main-umars-projects.vercel.app",
+  ],
 });
 
 export type Session = typeof auth.$Infer.Session;
-export type User    = typeof auth.$Infer.Session.user;
+export type User = typeof auth.$Infer.Session.user;
