@@ -1,4 +1,4 @@
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans, Nunito_Sans } from 'next/font/google';
 import './globals.css';
 import Navbar from './_components/navbar'
 import { AuthProvider } from './hooks/auth-context';
@@ -6,11 +6,17 @@ import fs from "fs";
 import path from "path";
 import { ToastContainer } from 'react-toastify'
 
-// Configure the font
+// Configure the fonts
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-jakarta',
+});
+
+const nunitoSans = Nunito_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '600', '700', '800', '900'],
+  variable: '--font-nunito-sans',
 });
 
 export default function RootLayout({
@@ -25,7 +31,7 @@ export default function RootLayout({
   );
 
   return (
-    <html lang="en" className={`${jakarta.variable}`}>
+    <html lang="en" className={`${jakarta.variable} ${nunitoSans.variable}`}>
       <body className="antialiased">
         <AuthProvider>
           <div
