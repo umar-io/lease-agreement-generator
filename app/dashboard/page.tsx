@@ -11,6 +11,8 @@ export default async function DashboardPage() {
     headers: await headers(),
   });
 
+  console.log(session)
+
   // 2. Redirect if not logged in
   if (!session) {
     redirect("/auth/login");

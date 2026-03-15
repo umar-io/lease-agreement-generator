@@ -1,20 +1,22 @@
-// middleware.ts  (root of project, next to app/)
+// middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
 export async function middleware(request: NextRequest) {
-  const session = getSessionCookie(request);
+  const sessionCookie = getSessionCookie(request, {
+    cookieName: "better-auth.session_token", // explicit cookie name
+  });
 
-  const isAuthRoute     = request.nextUrl.pathname.startsWith("/auth");
-  const isDashboardRoute= request.nextUrl.pathname.startsWith("/dashboard");
+  const isAuthRoute      = request.nextUrl.pathname.startsWith("/auth");
+  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
 
-  // No session + trying to access dashboard → redirect to login
-  if (!session && isDashboardRoute) {
-    return NextResponse.redirect(new URL("/auth/login", request.url));
+  if (!sessionCookie && isDashboardRoute) {
+    const loginUrl = new URL("/auth/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Has session + on auth page → redirect to dashboard
-  if (session && isAuthRoute) {
+  if (sessionCookie && isAuthRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
