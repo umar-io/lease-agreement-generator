@@ -3,41 +3,149 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  LayoutDashboard, FileText, PenSquare, Settings, LogOut,
-  Plus, Search, Bell, ChevronRight, MoreHorizontal,
-  Home, Building, KeyRound, ScrollText, ArrowUpRight,
-  CheckCircle2, Clock, AlertCircle, Send, Eye,
-  TrendingUp, Users, Zap, Menu, X,
+  LayoutDashboard,
+  FileText,
+  PenSquare,
+  Settings,
+  LogOut,
+  Plus,
+  Search,
+  Bell,
+  ChevronRight,
+  MoreHorizontal,
+  Home,
+  Building,
+  KeyRound,
+  ScrollText,
+  ArrowUpRight,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Send,
+  Eye,
+  TrendingUp,
+  Users,
+  Zap,
+  Menu,
+  X,
 } from "lucide-react";
+import Sidebar from "@/app/_components/sidebar";
 
 // ── MOCK DATA ─────────────────────────────────
 const LEASES = [
-  { id: "LF-001", tenant: "James Adeyemi",   property: "12 Victoria Island, Apt 4B", type: "APARTMENT", status: "SIGNED",   date: "Mar 10, 2025", amount: "₦450,000" },
-  { id: "LF-002", tenant: "Amaka Obi",        property: "Plot 7 Lekki Phase 1",       type: "HOUSE",     status: "PENDING",  date: "Mar 12, 2025", amount: "₦1,200,000" },
-  { id: "LF-003", tenant: "Chidi Nwosu",      property: "44 Ikeja GRA, Unit 2",       type: "APARTMENT", status: "SIGNED",   date: "Mar 8, 2025",  amount: "₦320,000" },
-  { id: "LF-004", tenant: "Fatima Bello",     property: "Suite 5, Marina Business Hub",type: "COMMERCIAL",status: "DRAFT",   date: "Mar 14, 2025", amount: "₦2,800,000" },
-  { id: "LF-005", tenant: "Emmanuel Eze",     property: "3 Wuse II, Room B",           type: "ROOM",      status: "PENDING",  date: "Mar 13, 2025", amount: "₦85,000" },
-  { id: "LF-006", tenant: "Ngozi Okafor",     property: "18 Banana Island Drive",      type: "HOUSE",     status: "SIGNED",   date: "Mar 6, 2025",  amount: "₦3,500,000" },
+  {
+    id: "LF-001",
+    tenant: "James Adeyemi",
+    property: "12 Victoria Island, Apt 4B",
+    type: "APARTMENT",
+    status: "SIGNED",
+    date: "Mar 10, 2025",
+    amount: "₦450,000",
+  },
+  {
+    id: "LF-002",
+    tenant: "Amaka Obi",
+    property: "Plot 7 Lekki Phase 1",
+    type: "HOUSE",
+    status: "PENDING",
+    date: "Mar 12, 2025",
+    amount: "₦1,200,000",
+  },
+  {
+    id: "LF-003",
+    tenant: "Chidi Nwosu",
+    property: "44 Ikeja GRA, Unit 2",
+    type: "APARTMENT",
+    status: "SIGNED",
+    date: "Mar 8, 2025",
+    amount: "₦320,000",
+  },
+  {
+    id: "LF-004",
+    tenant: "Fatima Bello",
+    property: "Suite 5, Marina Business Hub",
+    type: "COMMERCIAL",
+    status: "DRAFT",
+    date: "Mar 14, 2025",
+    amount: "₦2,800,000",
+  },
+  {
+    id: "LF-005",
+    tenant: "Emmanuel Eze",
+    property: "3 Wuse II, Room B",
+    type: "ROOM",
+    status: "PENDING",
+    date: "Mar 13, 2025",
+    amount: "₦85,000",
+  },
+  {
+    id: "LF-006",
+    tenant: "Ngozi Okafor",
+    property: "18 Banana Island Drive",
+    type: "HOUSE",
+    status: "SIGNED",
+    date: "Mar 6, 2025",
+    amount: "₦3,500,000",
+  },
 ];
 
 const STATS = [
-  { label: "Total Leases",    value: "48",    delta: "+12%", icon: <FileText size={18} strokeWidth={1.5} />,    accent: false },
-  { label: "Signed This Month", value: "14",  delta: "+8%",  icon: <CheckCircle2 size={18} strokeWidth={1.5} />, accent: true  },
-  { label: "Pending Signature", value: "6",   delta: "-2",   icon: <Clock size={18} strokeWidth={1.5} />,       accent: false },
-  { label: "Total Value",     value: "₦48.2M", delta: "+23%", icon: <TrendingUp size={18} strokeWidth={1.5} />, accent: false },
+  {
+    label: "Total Leases",
+    value: "48",
+    delta: "+12%",
+    icon: <FileText size={18} strokeWidth={1.5} />,
+    accent: false,
+  },
+  {
+    label: "Signed This Month",
+    value: "14",
+    delta: "+8%",
+    icon: <CheckCircle2 size={18} strokeWidth={1.5} />,
+    accent: true,
+  },
+  {
+    label: "Pending Signature",
+    value: "6",
+    delta: "-2",
+    icon: <Clock size={18} strokeWidth={1.5} />,
+    accent: false,
+  },
+  {
+    label: "Total Value",
+    value: "₦48.2M",
+    delta: "+23%",
+    icon: <TrendingUp size={18} strokeWidth={1.5} />,
+    accent: false,
+  },
 ];
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-  APARTMENT:  <Home size={13} strokeWidth={1.5} />,
-  HOUSE:      <Building size={13} strokeWidth={1.5} />,
-  ROOM:       <KeyRound size={13} strokeWidth={1.5} />,
+  APARTMENT: <Home size={13} strokeWidth={1.5} />,
+  HOUSE: <Building size={13} strokeWidth={1.5} />,
+  ROOM: <KeyRound size={13} strokeWidth={1.5} />,
   COMMERCIAL: <ScrollText size={13} strokeWidth={1.5} />,
 };
 
-const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
-  SIGNED:  { color: "#4caf78", bg: "rgba(76,175,120,.12)", icon: <CheckCircle2 size={11} strokeWidth={2} /> },
-  PENDING: { color: "var(--gold)", bg: "rgba(201,168,76,.12)", icon: <Clock size={11} strokeWidth={2} /> },
-  DRAFT:   { color: "rgba(245,240,232,.4)", bg: "rgba(245,240,232,.06)", icon: <PenSquare size={11} strokeWidth={2} /> },
+const STATUS_CONFIG: Record<
+  string,
+  { color: string; bg: string; icon: React.ReactNode }
+> = {
+  SIGNED: {
+    color: "#4caf78",
+    bg: "rgba(76,175,120,.12)",
+    icon: <CheckCircle2 size={11} strokeWidth={2} />,
+  },
+  PENDING: {
+    color: "var(--gold)",
+    bg: "rgba(201,168,76,.12)",
+    icon: <Clock size={11} strokeWidth={2} />,
+  },
+  DRAFT: {
+    color: "rgba(245,240,232,.4)",
+    bg: "rgba(245,240,232,.06)",
+    icon: <PenSquare size={11} strokeWidth={2} />,
+  },
 };
 
 // ── NEW LEASE WIZARD ──────────────────────────
@@ -48,10 +156,30 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState("");
 
   const types = [
-    { key:"APARTMENT",  label:"Apartment",  icon:<Home size={22} strokeWidth={1.5} />,      clauses:"12 clauses" },
-    { key:"HOUSE",      label:"House",      icon:<Building size={22} strokeWidth={1.5} />,   clauses:"15 clauses" },
-    { key:"ROOM",       label:"Room",       icon:<KeyRound size={22} strokeWidth={1.5} />,   clauses:"8 clauses"  },
-    { key:"COMMERCIAL", label:"Commercial", icon:<ScrollText size={22} strokeWidth={1.5} />, clauses:"20 clauses" },
+    {
+      key: "APARTMENT",
+      label: "Apartment",
+      icon: <Home size={22} strokeWidth={1.5} />,
+      clauses: "12 clauses",
+    },
+    {
+      key: "HOUSE",
+      label: "House",
+      icon: <Building size={22} strokeWidth={1.5} />,
+      clauses: "15 clauses",
+    },
+    {
+      key: "ROOM",
+      label: "Room",
+      icon: <KeyRound size={22} strokeWidth={1.5} />,
+      clauses: "8 clauses",
+    },
+    {
+      key: "COMMERCIAL",
+      label: "Commercial",
+      icon: <ScrollText size={22} strokeWidth={1.5} />,
+      clauses: "20 clauses",
+    },
   ];
 
   return (
@@ -63,21 +191,33 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
             <span className="wz-eyebrow">NEW LEASE</span>
             <h2 className="wz-title">{STEPS[step]}</h2>
           </div>
-          <button className="wz-close" onClick={onClose}><X size={18} strokeWidth={1.5} /></button>
+          <button className="wz-close" onClick={onClose}>
+            <X size={18} strokeWidth={1.5} />
+          </button>
         </div>
 
         {/* Progress */}
         <div className="wz-progress-row">
           {STEPS.map((s, i) => (
-            <div key={s} className={`wz-step ${i === step ? "active" : ""} ${i < step ? "done" : ""}`}>
+            <div
+              key={s}
+              className={`wz-step ${i === step ? "active" : ""} ${i < step ? "done" : ""}`}
+            >
               <div className="wz-step-dot">
-                {i < step ? <CheckCircle2 size={12} strokeWidth={2} /> : <span>{i + 1}</span>}
+                {i < step ? (
+                  <CheckCircle2 size={12} strokeWidth={2} />
+                ) : (
+                  <span>{i + 1}</span>
+                )}
               </div>
               <span className="wz-step-label">{s}</span>
             </div>
           ))}
           <div className="wz-progress-line">
-            <div className="wz-progress-fill" style={{ width:`${(step / (STEPS.length - 1)) * 100}%` }} />
+            <div
+              className="wz-progress-fill"
+              style={{ width: `${(step / (STEPS.length - 1)) * 100}%` }}
+            />
           </div>
         </div>
 
@@ -85,11 +225,17 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
         <div className="wz-body">
           {step === 0 && (
             <div className="wz-step-content">
-              <p className="wz-step-desc">Choose the property type to load the correct template and state clauses.</p>
+              <p className="wz-step-desc">
+                Choose the property type to load the correct template and state
+                clauses.
+              </p>
               <div className="wz-type-grid">
-                {types.map(t => (
-                  <button key={t.key} className={`wz-type-card ${type === t.key ? "selected" : ""}`}
-                    onClick={() => setType(t.key)}>
+                {types.map((t) => (
+                  <button
+                    key={t.key}
+                    className={`wz-type-card ${type === t.key ? "selected" : ""}`}
+                    onClick={() => setType(t.key)}
+                  >
                     <div className="wz-type-icon">{t.icon}</div>
                     <span className="wz-type-label">{t.label}</span>
                     <span className="wz-type-clauses">{t.clauses}</span>
@@ -98,7 +244,10 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
               </div>
               <div className="wz-field">
                 <label className="wz-label">Property Address</label>
-                <input className="wz-input" placeholder="e.g. 12 Victoria Island, Apt 4B, Lagos" />
+                <input
+                  className="wz-input"
+                  placeholder="e.g. 12 Victoria Island, Apt 4B, Lagos"
+                />
               </div>
               <div className="wz-row">
                 <div className="wz-field">
@@ -121,7 +270,10 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
 
           {step === 1 && (
             <div className="wz-step-content">
-              <p className="wz-step-desc">Enter the tenant's details. These will auto-fill throughout the document.</p>
+              <p className="wz-step-desc">
+                Enter the tenant's details. These will auto-fill throughout the
+                document.
+              </p>
               <div className="wz-row">
                 <div className="wz-field">
                   <label className="wz-label">First Name</label>
@@ -134,7 +286,11 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
               </div>
               <div className="wz-field">
                 <label className="wz-label">Email Address</label>
-                <input className="wz-input" type="email" placeholder="james@email.com" />
+                <input
+                  className="wz-input"
+                  type="email"
+                  placeholder="james@email.com"
+                />
               </div>
               <div className="wz-field">
                 <label className="wz-label">Phone Number</label>
@@ -142,14 +298,19 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
               </div>
               <div className="wz-field">
                 <label className="wz-label">Employer / Occupation</label>
-                <input className="wz-input" placeholder="e.g. Software Engineer at Flutterwave" />
+                <input
+                  className="wz-input"
+                  placeholder="e.g. Software Engineer at Flutterwave"
+                />
               </div>
             </div>
           )}
 
           {step === 2 && (
             <div className="wz-step-content">
-              <p className="wz-step-desc">Set the lease terms. All amounts in Naira (₦).</p>
+              <p className="wz-step-desc">
+                Set the lease terms. All amounts in Naira (₦).
+              </p>
               <div className="wz-row">
                 <div className="wz-field">
                   <label className="wz-label">Start Date</label>
@@ -177,12 +338,21 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
               </div>
               <div className="wz-field">
                 <label className="wz-label">Special Clauses (optional)</label>
-                <textarea className="wz-input" rows={3}
-                  style={{ height:"auto", padding:"12px 16px", resize:"vertical" }}
-                  placeholder="e.g. No pets allowed. Tenant responsible for generator fuel..." />
+                <textarea
+                  className="wz-input"
+                  rows={3}
+                  style={{
+                    height: "auto",
+                    padding: "12px 16px",
+                    resize: "vertical",
+                  }}
+                  placeholder="e.g. No pets allowed. Tenant responsible for generator fuel..."
+                />
               </div>
               <div className="wz-toggle-row">
-                <label className="wz-label" style={{ marginBottom:0 }}>Include Pet Addendum</label>
+                <label className="wz-label" style={{ marginBottom: 0 }}>
+                  Include Pet Addendum
+                </label>
                 <div className="wz-toggle" />
               </div>
             </div>
@@ -190,15 +360,17 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
 
           {step === 3 && (
             <div className="wz-step-content">
-              <p className="wz-step-desc">Review your lease summary before sending for signature.</p>
+              <p className="wz-step-desc">
+                Review your lease summary before sending for signature.
+              </p>
               {[
-                ["Property",    "12 Victoria Island, Apt 4B, Lagos"],
-                ["Type",        type || "Apartment"],
-                ["Tenant",      "James Adeyemi"],
-                ["Email",       "james@email.com"],
-                ["Duration",    "1 Year — Apr 1, 2025 to Mar 31, 2026"],
-                ["Rent",        "₦450,000 / month"],
-                ["Deposit",     "₦900,000"],
+                ["Property", "12 Victoria Island, Apt 4B, Lagos"],
+                ["Type", type || "Apartment"],
+                ["Tenant", "James Adeyemi"],
+                ["Email", "james@email.com"],
+                ["Duration", "1 Year — Apr 1, 2025 to Mar 31, 2026"],
+                ["Rent", "₦450,000 / month"],
+                ["Deposit", "₦900,000"],
               ].map(([k, v]) => (
                 <div key={k} className="wz-review-row">
                   <span className="wz-review-key">{k}</span>
@@ -207,7 +379,10 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
               ))}
               <div className="wz-review-notice">
                 <Zap size={13} color="var(--gold)" />
-                <span>State-specific clauses for <strong>Lagos</strong> will be applied automatically.</span>
+                <span>
+                  State-specific clauses for <strong>Lagos</strong> will be
+                  applied automatically.
+                </span>
               </div>
             </div>
           )}
@@ -215,18 +390,28 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
 
         {/* Footer */}
         <div className="wz-footer">
-          {step > 0
-            ? <button className="wz-btn-back" onClick={() => setStep(s => s - 1)}>Back</button>
-            : <div />
-          }
-          {step < STEPS.length - 1
-            ? <button className="wz-btn-next" onClick={() => setStep(s => s + 1)}>
-                Continue <ChevronRight size={14} strokeWidth={2} />
-              </button>
-            : <button className="wz-btn-send">
-                <Send size={14} strokeWidth={2} /> Send for Signature
-              </button>
-          }
+          {step > 0 ? (
+            <button
+              className="wz-btn-back"
+              onClick={() => setStep((s) => s - 1)}
+            >
+              Back
+            </button>
+          ) : (
+            <div />
+          )}
+          {step < STEPS.length - 1 ? (
+            <button
+              className="wz-btn-next"
+              onClick={() => setStep((s) => s + 1)}
+            >
+              Continue <ChevronRight size={14} strokeWidth={2} />
+            </button>
+          ) : (
+            <button className="wz-btn-send">
+              <Send size={14} strokeWidth={2} /> Send for Signature
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -236,14 +421,15 @@ function NewLeaseWizard({ onClose }: { onClose: () => void }) {
 // ── DASHBOARD ────────────────────────────────
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showWizard, setShowWizard]   = useState(false);
-  const [activeNav, setActiveNav]     = useState("dashboard");
-  const [search, setSearch]           = useState("");
+  const [showWizard, setShowWizard] = useState(false);
+  const [activeNav, setActiveNav] = useState("dashboard");
+  const [search, setSearch] = useState("");
 
-  const filtered = LEASES.filter(l =>
-    l.tenant.toLowerCase().includes(search.toLowerCase()) ||
-    l.property.toLowerCase().includes(search.toLowerCase()) ||
-    l.id.toLowerCase().includes(search.toLowerCase())
+  const filtered = LEASES.filter(
+    (l) =>
+      l.tenant.toLowerCase().includes(search.toLowerCase()) ||
+      l.property.toLowerCase().includes(search.toLowerCase()) ||
+      l.id.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -842,188 +1028,25 @@ export default function DashboardPage() {
       {showWizard && <NewLeaseWizard onClose={() => setShowWizard(false)} />}
 
       {/* Sidebar overlay (mobile) */}
-      <div className={`db-sidebar-overlay ${sidebarOpen ? "show" : ""}`} onClick={() => setSidebarOpen(false)} />
+      <div
+        className={`db-sidebar-overlay ${sidebarOpen ? "show" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+      />
 
-      <div className="db-layout">
-        {/* ─── SIDEBAR ─── */}
-        <aside className={`db-sidebar ${sidebarOpen ? "open" : ""}`}>
-          <div className="db-sidebar-inner">
-            <div className="db-wordmark">LEEZIGN</div>
-
-            <nav className="db-nav">
-              <span className="db-nav-section">Main</span>
-              {[
-                { key:"dashboard", label:"Dashboard",    icon:<LayoutDashboard size={15} strokeWidth={1.5} /> },
-                { key:"leases",    label:"All Leases",   icon:<FileText size={15} strokeWidth={1.5} /> },
-                { key:"templates", label:"Templates",    icon:<ScrollText size={15} strokeWidth={1.5} /> },
-                { key:"drafts",    label:"Drafts",       icon:<PenSquare size={15} strokeWidth={1.5} /> },
-              ].map(n => (
-                <button key={n.key} className={`db-nav-item ${activeNav === n.key ? "active" : ""}`}
-                  onClick={() => { setActiveNav(n.key); setSidebarOpen(false); }}>
-                  {n.icon} {n.label}
-                </button>
-              ))}
-
-              <span className="db-nav-section">Account</span>
-              {[
-                { key:"tenants",  label:"Tenants",   icon:<Users size={15} strokeWidth={1.5} /> },
-                { key:"settings", label:"Settings",  icon:<Settings size={15} strokeWidth={1.5} /> },
-              ].map(n => (
-                <button key={n.key} className={`db-nav-item ${activeNav === n.key ? "active" : ""}`}
-                  onClick={() => { setActiveNav(n.key); setSidebarOpen(false); }}>
-                  {n.icon} {n.label}
-                </button>
-              ))}
-            </nav>
-
-            <div className="db-sidebar-footer">
-              <div className="db-user-row">
-                <div className="db-avatar">U</div>
-                <div>
-                  <div className="db-user-name">Umar</div>
-                  <div className="db-user-email">umar@leaseflow.io</div>
-                </div>
-              </div>
-              <Link href="/auth/login" className="db-nav-item" style={{ marginTop:4 }}>
-                <LogOut size={15} strokeWidth={1.5} /> Sign Out
-              </Link>
-            </div>
-          </div>
-        </aside>
-
-        {/* ─── MAIN ─── */}
-        <main className="db-main">
-
-          {/* Topbar */}
-          <div className="db-topbar">
-            <div className="db-topbar-left">
-              <button className="db-mobile-menu-btn" onClick={() => setSidebarOpen(true)}>
-                <Menu size={20} color="var(--ink)" strokeWidth={1.5} />
-              </button>
-              <h1 className="db-page-title">Dashboard</h1>
-              <span className="db-page-badge">March 2025</span>
-            </div>
-            <div className="db-topbar-right">
-              <div className="db-search-wrap">
-                <Search size={13} color="var(--muted)" strokeWidth={1.5} />
-                <input
-                  className="db-search-input"
-                  placeholder="Search leases..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-              </div>
-              <button className="db-icon-btn">
-                <Bell size={15} strokeWidth={1.5} />
-                <div className="db-notif-dot" />
-              </button>
-              <button className="db-new-btn" onClick={() => setShowWizard(true)}>
-                <Plus size={14} strokeWidth={2} /> New Lease
-              </button>
-            </div>
-          </div>
-
-          <div className="db-content">
-
-            {/* Stats */}
-            <div className="db-stats-grid">
-              {STATS.map((s, i) => (
-                <div key={i} className={`db-stat-card ${s.accent ? "accent" : ""}`}>
-                  <div className="db-stat-top">
-                    <div className="db-stat-icon">{s.icon}</div>
-                    <span className="db-stat-delta">{s.delta}</span>
-                  </div>
-                  <div className="db-stat-value">{s.value}</div>
-                  <div className="db-stat-label">{s.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Quick actions */}
-            <div className="db-section-header" style={{ animation:"slideUp .5s cubic-bezier(.77,0,.18,1) .15s both" }}>
-              <span className="db-section-title">Quick Actions</span>
-            </div>
-            <div className="db-quick-row">
-              {[
-                { icon:<Plus size={16} strokeWidth={1.5} />,         title:"New Lease",       desc:"Start from a template", action:() => setShowWizard(true) },
-                { icon:<FileText size={16} strokeWidth={1.5} />,     title:"View Templates",  desc:"Browse all 4 types",    action:() => {} },
-                { icon:<Send size={16} strokeWidth={1.5} />,         title:"Pending Sends",   desc:"6 awaiting signature",  action:() => {} },
-                { icon:<ArrowUpRight size={16} strokeWidth={1.5} />, title:"Analytics",       desc:"View lease insights",   action:() => {} },
-              ].map((q, i) => (
-                <div key={i} className="db-quick-card" onClick={q.action}>
-                  <div className="db-quick-icon">{q.icon}</div>
-                  <div className="db-quick-title">{q.title}</div>
-                  <div className="db-quick-desc">{q.desc}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Leases table */}
-            <div className="db-section-header">
-              <span className="db-section-title">Recent Leases</span>
-              <a href="#" className="db-view-all">View All <ChevronRight size={11} strokeWidth={2} /></a>
-            </div>
-
-            <div className="db-table-wrap">
-              {filtered.length > 0 ? (
-                <table className="db-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Tenant</th>
-                      <th>Type</th>
-                      <th>Status</th>
-                      <th>Date</th>
-                      <th>Amount</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(l => {
-                      const sc = STATUS_CONFIG[l.status];
-                      return (
-                        <tr key={l.id}>
-                          <td><span className="db-lease-id">{l.id}</span></td>
-                          <td>
-                            <div className="db-tenant-name">{l.tenant}</div>
-                            <div className="db-tenant-prop">{l.property}</div>
-                          </td>
-                          <td>
-                            <span className="db-type-badge">
-                              {TYPE_ICONS[l.type]} {l.type}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="db-status-badge"
-                              style={{ color:sc.color, background:sc.bg }}>
-                              {sc.icon} {l.status}
-                            </span>
-                          </td>
-                          <td style={{ fontSize:12, color:"var(--muted)", whiteSpace:"nowrap" }}>{l.date}</td>
-                          <td><span className="db-amount">{l.amount}</span></td>
-                          <td>
-                            <button className="db-action-btn" title="View"><Eye size={13} strokeWidth={1.5} /></button>
-                            <button className="db-action-btn" title="More"><MoreHorizontal size={13} strokeWidth={1.5} /></button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="db-empty">
-                  <div className="db-empty-icon"><Search size={22} strokeWidth={1.5} /></div>
-                  <p style={{ fontSize:13, fontWeight:500 }}>No leases match "{search}"</p>
-                  <button onClick={() => setSearch("")} style={{ fontSize:11, color:"var(--accent)", background:"none", border:"none", cursor:"pointer", fontWeight:700, letterSpacing:".08em", textTransform:"uppercase" }}>
-                    Clear Search
-                  </button>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </main>
-      </div>
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        activeNav={activeNav}
+        setActiveNav={setActiveNav}
+        STATS={STATS}
+        showWizard={showWizard}
+        setShowWizard={setShowWizard}
+        search={search}
+        setSearch={setSearch}
+        filtered={filtered}
+        STATUS_CONFIG={STATUS_CONFIG}
+        TYPE_ICONS={TYPE_ICONS}
+      />
     </>
   );
 }
