@@ -5,6 +5,10 @@ import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+
+  secret: process.env.BETTER_AUTH_SECRET!,
+
   database: drizzleAdapter(db, {
     provider:  "pg",
     usePlural: false,
@@ -21,9 +25,15 @@ export const auth = betterAuth({
   },
 
   session: {
-    expiresIn: 60 * 60 * 24 * 7,
-    updateAge: 60 * 60 * 24,
+    expiresIn:   60 * 60 * 24 * 7,
+    updateAge:   60 * 60 * 24,
+    cookieCache: {
+      enabled: true,
+      maxAge:  5 * 60,
+    },
   },
+
+  trustedOrigins: ["http://localhost:3000"],
 });
 
 export type Session = typeof auth.$Infer.Session;

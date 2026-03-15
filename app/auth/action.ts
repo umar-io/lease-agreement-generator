@@ -19,16 +19,17 @@ export async function login(
 
   try {
     await auth.api.signInEmail({
-      body: { email, password },
+      body:    { email, password },
       headers: await headers(),
     });
   } catch (e) {
+    console.error("LOGIN ERROR:", e);
     if (e instanceof APIError) {
       switch (e.status) {
         case "UNAUTHORIZED":
           return { error: "Invalid email or password." };
         case "TOO_MANY_REQUESTS":
-          return { error: "Too many attempts. Please wait a few minutes." };
+          return { error: "Too many attempts. Please try again later." };
         default:
           return { error: e.message ?? "Something went wrong." };
       }
@@ -39,7 +40,6 @@ export async function login(
   redirect("/dashboard");
 }
 
-// app/auth/action.ts
 export async function signup(
   prevState: { error: string } | undefined,
   formData: FormData
@@ -47,22 +47,21 @@ export async function signup(
   const email           = formData.get("email") as string;
   const password        = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
+  const firstName       = formData.get("firstName") as string ?? "";
+  const lastName        = formData.get("lastName") as string ?? "";
   const terms           = formData.get("terms");
 
   if (!email || !password) {
     return { error: "Email and password are required." };
   }
-
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
   }
-
   if (password !== confirmPassword) {
     return { error: "Passwords do not match." };
   }
-
   if (!terms) {
-    return { error: "You must accept the Terms of Service." };
+    return { error: "You must accept the Terms of Service to continue." };
   }
 
   try {
@@ -70,30 +69,28 @@ export async function signup(
       body: {
         email,
         password,
-        name: email.split("@")[0],
+        name: `${firstName} ${lastName}`.trim() || email.split("@")[0],
       },
       headers: await headers(),
     });
   } catch (e) {
-    // ── Log the real error to your terminal ──
-    console.error("=== SIGNUP ERROR ===");
-    console.error("Type:", typeof e);
-    console.error("Error:", e);
-    if (e instanceof Error) {
-      console.error("Message:", e.message);
-      console.error("Stack:", e.stack);
-    }
-    // ─────────────────────────────────────────
-
+    console.error("SIGNUP ERROR:", e);
     if (e instanceof APIError) {
-      return { error: `APIError [${e.status}]: ${e.message}` };
+      switch (e.status) {
+        case "UNPROCESSABLE_ENTITY":
+          return { error: "An account with this email already exists." };
+        case "TOO_MANY_REQUESTS":
+          return { error: "Too many attempts. Please try again later." };
+        default:
+          return { error: e.message ?? "Something went wrong." };
+      }
     }
-
-    return { error: `Unexpected error: ${e instanceof Error ? e.message : String(e)}` };
+    return { error: "Something went wrong. Please try again." };
   }
 
   redirect("/dashboard");
 }
+
 export async function logout() {
   await auth.api.signOut({
     headers: await headers(),
